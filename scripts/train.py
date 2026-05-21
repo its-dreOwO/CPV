@@ -1,4 +1,5 @@
 """Entry point for model training."""
+
 import argparse
 
 
@@ -12,7 +13,10 @@ def parse_args():
 
 def main():
     args = parse_args()
-    print(f"Training with config={args.config}, epochs={args.epochs}, device={args.device}")
+    print(
+        f"Training with config={args.config}, "
+        f"epochs={args.epochs}, device={args.device}"
+    )
 
 
 if __name__ == "__main__":

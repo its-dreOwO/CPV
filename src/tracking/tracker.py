@@ -1,7 +1,5 @@
 from dataclasses import dataclass, field
-from typing import List, Dict
-
-import numpy as np
+from typing import List
 
 from src.detection.detector import Detection
 

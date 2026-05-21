@@ -1,4 +1,5 @@
 """Demo pipeline: run detection + tracking on a video source."""
+
 import argparse
 
 import cv2
@@ -8,7 +9,9 @@ from src.utils.visualizer import draw_tracks
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Drone obstacle avoidance demo")
-    parser.add_argument("--source", type=str, default="0", help="Video file or camera index")
+    parser.add_argument(
+        "--source", type=str, default="0", help="Video file or camera index"
+    )
     parser.add_argument("--weights", type=str, default="", help="Model weights path")
     return parser.parse_args()
 

@@ -37,6 +37,7 @@ data/processed/*
 CPV_notes/
 *.xlsx
 *.pptx
+!docs/*.xlsx
 
 # OS
 .DS_Store

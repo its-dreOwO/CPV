@@ -1,0 +1,19 @@
+from dataclasses import dataclass, field
+from typing import List, Dict
+
+import numpy as np
+
+from src.detection.detector import Detection
+
+
+@dataclass
+class Track:
+    track_id: int
+    bbox: List[float]
+    velocity: List[float] = field(default_factory=lambda: [0.0, 0.0])
+    age: int = 0
+
+
+class BaseTracker:
+    def update(self, detections: List[Detection]) -> List[Track]:
+        raise NotImplementedError

@@ -1,4 +1,4 @@
-# CPV301 — Drone Obstacle Avoidance (RT-DR-003)
+# CPV301 - Drone Obstacle Avoidance (RT-DR-003)
 
 **Research Question:** How can drones avoid dynamic obstacles during flight?
 
@@ -6,29 +6,29 @@
 
 ```
 CPV/
-├── data/
-│   ├── raw/          # original, unprocessed data
-│   ├── processed/    # cleaned / augmented data
-│   └── samples/      # small sample files for quick testing
-├── models/           # saved weights (not tracked by git)
-├── notebooks/        # EDA and experiment notebooks
-├── reports/          # R1–R4 submission slides & reports
-│   ├── R1/
-│   ├── R2/
-│   ├── R3/
-│   └── R4/
-├── scripts/
-│   ├── train.py      # training entry point
-│   └── evaluate.py   # evaluation entry point
-├── src/
-│   ├── detection/    # object detection module
-│   ├── tracking/     # multi-object tracking module
-│   ├── avoidance/    # avoidance planning module
-│   └── utils/        # shared helpers (visualizer, I/O, …)
-├── tests/            # unit tests (pytest)
-├── main.py           # demo pipeline
-├── requirements.txt
-└── setup.cfg         # flake8 + pytest config
+|-- data/
+|   |-- raw/          # original, unprocessed data
+|   |-- processed/    # cleaned / augmented data
+|   |__ samples/      # small sample files for quick testing
+|-- models/           # saved weights (not tracked by git)
+|-- notebooks/        # EDA and experiment notebooks
+|-- reports/          # R1-R4 submission slides & reports
+|   |-- R1/
+|   |-- R2/
+|   |-- R3/
+|   |__ R4/
+|-- scripts/
+|   |-- train.py      # training entry point
+|   |__ evaluate.py   # evaluation entry point
+|-- src/
+|   |-- detection/    # object detection module
+|   |-- tracking/     # multi-object tracking module
+|   |-- avoidance/    # avoidance planning module
+|   |__ utils/        # shared helpers (visualizer, I/O, ...)
+|-- tests/            # unit tests (pytest)
+|-- main.py           # demo pipeline
+|-- requirements.txt
+|__ setup.cfg         # flake8 + pytest config
 ```
 
 ## Setup

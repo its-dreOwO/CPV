@@ -1,0 +1,33 @@
+# Implementation Plan: Upgrade CPV Project
+
+The goal is to implement concrete functional components for detection, tracking, and avoidance planning as defined in [CLAUDE.md](file:///c:/Users/Admin/Documents/CPV/CLAUDE.md), and integrate them into the [main.py](file:///c:/Users/Admin/Documents/CPV/main.py) demo.
+
+## Proposed Changes
+
+### 1. Detection [NEW]
+- Create `src/detection/yolo_detector.py` implementing `YoloDetector`.
+- Use `ultralytics.YOLO` to load model weights and perform inference.
+- Map YOLO output to the [Detection](file:///c:/Users/Admin/Documents/CPV/src/detection/detector.py#7-13) dataclass.
+
+### 2. Tracking [NEW]
+- Create `src/tracking/kalman_tracker.py` implementing `KalmanTracker`.
+- Use `filterpy` for state estimation and `scipy.optimize.linear_sum_assignment` for object matching.
+- Calculate and maintain velocity for each track.
+
+### 3. Avoidance Planning [NEW]
+- Create `src/avoidance/geometric_planner.py` implementing `GeometricPlanner`.
+- Implement a safety-buffer based geometric algorithm to calculate `yaw_delta` and `altitude_delta`.
+
+### 4. Integration
+- Update [main.py](file:///c:/Users/Admin/Documents/CPV/main.py) to instantiate `YoloDetector`, `KalmanTracker`, and `GeometricPlanner`.
+- Loop through video frames, process them through the pipeline, and visualize results.
+
+## Verification Plan
+
+### Automated Tests
+- Run `pytest` to ensure basic unit tests still pass.
+- Add new tests in `tests/` for the concrete implementations (e.g., `tests/test_yolo_detector.py`).
+
+### Manual Verification
+- Run `python main.py --source data/samples/sample_video.mp4` (if sample data exists) or with a webcam to verify the end-to-end visualization.
+- Observe if detections and track IDs are stable and if avoidance commands are generated.

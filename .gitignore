@@ -53,3 +53,8 @@ Thumbs.db
 .vscode/
 .idea/
 *.swp
+
+# Local docs and artifacts
+PROJECT_EXPLANATION.md
+flake8_results.txt
+implementation_plan.md.resolved

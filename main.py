@@ -30,12 +30,6 @@ def parse_args():
 def main():
     args = parse_args()
 
-    # Initialize components
-    print(f"Initializing Detector with {args.weights} on {args.device}...")
-    detector = YoloDetector(model_path=args.weights)
-    tracker = KalmanTracker()
-    planner = GeometricPlanner()  # Uses defaults for 640x640 frame
-
     source = int(args.source) if args.source.isdigit() else args.source
     cap = cv2.VideoCapture(source)
 
@@ -43,13 +37,24 @@ def main():
         print(f"Error: Could not open source {source}")
         return
 
+    # Read first frame to get dimensions
+    ret, frame = cap.read()
+    if not ret:
+        print("Error: Could not read first frame")
+        cap.release()
+        return
+    h, w = frame.shape[:2]
+
+    # Initialize components
+    print(f"Initializing Detector with {args.weights} on {args.device}...")
+    detector = YoloDetector(model_path=args.weights)
+    tracker = KalmanTracker()
+    planner = GeometricPlanner(frame_width=w, frame_height=h)
+
     print("Starting pipeline. Press 'q' to quit.")
 
-    while cap.isOpened():
-        ret, frame = cap.read()
-        if not ret:
-            break
-
+    # We already read the first frame, so process it then continue loop
+    while True:
         # 1. Detection
         detections = detector.detect(frame)
 
@@ -64,6 +69,10 @@ def main():
 
         cv2.imshow("Drone Obstacle Avoidance", vis)
         if cv2.waitKey(1) & 0xFF == ord("q"):
+            break
+
+        ret, frame = cap.read()
+        if not ret:
             break
 
     cap.release()

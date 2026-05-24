@@ -92,6 +92,9 @@ class KalmanBoxTracker:
             self.kf.x[6] *= 0.0
         self.kf.predict()
         self.age += 1
+        # Prevent area from going negative
+        if self.kf.x[2] < 0:
+            self.kf.x[2] = 0.0
         if self.time_since_update > 0:
             self.hit_streak = 0
         self.time_since_update += 1
@@ -168,7 +171,10 @@ class KalmanTracker(BaseTracker):
         for t in reversed(to_del):
             self.trackers.pop(t)
 
-        dets = np.array([d.bbox for d in detections])
+        if len(detections) == 0:
+            dets = np.empty((0, 4))
+        else:
+            dets = np.array([d.bbox for d in detections])
         matched, unmatched_dets, unmatched_trks = self.associate_detections_to_trackers(
             dets, trks
         )

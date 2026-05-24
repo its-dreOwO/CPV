@@ -169,8 +169,8 @@ class KalmanTracker(BaseTracker):
             self.trackers.pop(t)
 
         dets = np.array([d.bbox for d in detections])
-        matched, unmatched_dets, unmatched_trks = (
-            self.associate_detections_to_trackers(dets, trks)
+        matched, unmatched_dets, unmatched_trks = self.associate_detections_to_trackers(
+            dets, trks
         )
 
         for m in matched:

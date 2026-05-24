@@ -5,43 +5,66 @@ from filterpy.kalman import KalmanFilter
 from src.detection.detector import Detection
 from src.tracking.tracker import BaseTracker, Track
 
+
 def iou_batch(bb_test, bb_gt):
     """
     Computes IOU between two sets of bboxes.
     """
     bb_gt = np.expand_dims(bb_gt, 0)
     bb_test = np.expand_dims(bb_test, 1)
-    
+
     xx1 = np.maximum(bb_test[..., 0], bb_gt[..., 0])
     yy1 = np.maximum(bb_test[..., 1], bb_gt[..., 1])
     xx2 = np.minimum(bb_test[..., 2], bb_gt[..., 2])
     yy2 = np.minimum(bb_test[..., 3], bb_gt[..., 3])
-    
-    w = np.maximum(0., xx2 - xx1)
-    h = np.maximum(0., yy2 - yy1)
+
+    w = np.maximum(0.0, xx2 - xx1)
+    h = np.maximum(0.0, yy2 - yy1)
     wh = w * h
-    
-    o = wh / ((bb_test[..., 2] - bb_test[..., 0]) * (bb_test[..., 3] - bb_test[..., 1])                                          
-        + (bb_gt[..., 2] - bb_gt[..., 0]) * (bb_gt[..., 3] - bb_gt[..., 1]) - wh)                                              
+
+    o = wh / (
+        (bb_test[..., 2] - bb_test[..., 0]) * (bb_test[..., 3] - bb_test[..., 1])
+        + (bb_gt[..., 2] - bb_gt[..., 0]) * (bb_gt[..., 3] - bb_gt[..., 1])
+        - wh
+    )
     return o
+
 
 class KalmanBoxTracker:
     """
-    This class represents the internal state of individual tracked objects observed as bbox.
+    This class represents the internal state of individual tracked objects.
     """
+
     count = 0
+
     def __init__(self, bbox, track_id):
         # Define constant velocity model
         self.kf = KalmanFilter(dim_x=7, dim_z=4)
-        self.kf.F = np.array([[1,0,0,0,1,0,0],[0,1,0,0,0,1,0],[0,0,1,0,0,0,1],[0,0,0,1,0,0,0],
-                              [0,0,0,0,1,0,0],[0,0,0,0,0,1,0],[0,0,0,0,0,0,1]])
-        self.kf.H = np.array([[1,0,0,0,0,0,0],[0,1,0,0,0,0,0],[0,0,1,0,0,0,0],[0,0,0,1,0,0,0]])
+        self.kf.F = np.array(
+            [
+                [1, 0, 0, 0, 1, 0, 0],
+                [0, 1, 0, 0, 0, 1, 0],
+                [0, 0, 1, 0, 0, 0, 1],
+                [0, 0, 0, 1, 0, 0, 0],
+                [0, 0, 0, 0, 1, 0, 0],
+                [0, 0, 0, 0, 0, 1, 0],
+                [0, 0, 0, 0, 0, 0, 1],
+            ]
+        )
+        self.kf.H = np.array(
+            [
+                [1, 0, 0, 0, 0, 0, 0],
+                [0, 1, 0, 0, 0, 0, 0],
+                [0, 0, 1, 0, 0, 0, 0],
+                [0, 0, 0, 1, 0, 0, 0],
+            ]
+        )
 
-        self.kf.R[2:,2:] *= 10.
-        self.kf.P[4:,4:] *= 1000. # Give high uncertainty to the unobservable initial velocities
-        self.kf.P *= 10.
-        self.kf.Q[-1,-1] *= 0.01
-        self.kf.Q[4:,4:] *= 0.01
+        self.kf.R[2:, 2:] *= 10.0
+        self.kf.P[4:, 4:] *= 1000.0  # High uncertainty for initial velocities
+        self.kf.P *= 10.0
+        self.kf.Q[-1, -1] *= 0.01
+        self.kf.Q[4:, 4:] *= 0.01
 
         self.kf.x[:4] = self.convert_bbox_to_z(bbox)
         self.time_since_update = 0
@@ -90,14 +113,12 @@ class KalmanBoxTracker:
     @staticmethod
     def convert_bbox_to_z(bbox):
         """
-        Takes a bounding box in the form [x1,y1,x2,y2] and returns z in the form
-        [x,y,s,r] where x,y is the centre of the box and s is the scale/area and r is
-        the aspect ratio
+        Takes a bounding box in form [x1,y1,x2,y2] and returns z in form [x,y,s,r]
         """
         w = bbox[2] - bbox[0]
         h = bbox[3] - bbox[1]
-        x = bbox[0] + w/2.
-        y = bbox[1] + h/2.
+        x = bbox[0] + w / 2.0
+        y = bbox[1] + h / 2.0
         s = w * h
         r = w / float(h)
         return np.array([x, y, s, r]).reshape((4, 1))
@@ -105,31 +126,36 @@ class KalmanBoxTracker:
     @staticmethod
     def convert_x_to_bbox(x, score=None):
         """
-        Takes a bounding box in the center form [x,y,s,r] and returns it as [x1,y1,x2,y2]
+        Takes a bounding box [x,y,s,r] and returns it as [x1,y1,x2,y2]
         """
         w = np.sqrt(x[2] * x[3])
         h = x[2] / w
         if score is None:
-            return np.array([x[0]-w/2., x[1]-h/2., x[0]+w/2., x[1]+h/2.]).reshape((1,4))
+            return np.array(
+                [x[0] - w / 2.0, x[1] - h / 2.0, x[0] + w / 2.0, x[1] + h / 2.0]
+            ).reshape((1, 4))
         else:
-            return np.array([x[0]-w/2., x[1]-h/2., x[0]+w/2., x[1]+h/2., score]).reshape((1,5))
+            return np.array(
+                [x[0] - w / 2.0, x[1] - h / 2.0, x[0] + w / 2.0, x[1] + h / 2.0, score]
+            ).reshape((1, 5))
+
 
 class KalmanTracker(BaseTracker):
     """
     Kalman Filter based multiple object tracker.
     """
-    def __init__(self, max_age: int = 30, min_hits: int = 3, iou_threshold: float = 0.3):
+
+    def __init__(self, max_age: int = 30, min_hits: int = 3, iou_thresh: float = 0.3):
         self.max_age = max_age
         self.min_hits = min_hits
-        self.iou_threshold = iou_threshold
+        self.iou_threshold = iou_thresh
         self.trackers = []
         self.frame_count = 0
         self.next_id = 1
 
     def update(self, detections: List[Detection]) -> List[Track]:
         self.frame_count += 1
-        
-        # Get predicted locations from existing trackers
+
         trks = np.zeros((len(self.trackers), 5))
         to_del = []
         ret = []
@@ -142,45 +168,49 @@ class KalmanTracker(BaseTracker):
         for t in reversed(to_del):
             self.trackers.pop(t)
 
-        # Format detections as numpy array
         dets = np.array([d.bbox for d in detections])
-        
-        # Match detections to trackers
-        matched, unmatched_dets, unmatched_trks = self.associate_detections_to_trackers(dets, trks)
+        matched, unmatched_dets, unmatched_trks = (
+            self.associate_detections_to_trackers(dets, trks)
+        )
 
-        # Update matched trackers with assigned detections
         for m in matched:
             self.trackers[m[1]].update(dets[m[0], :])
 
-        # Create and initialize new trackers for unmatched detections
         for i in unmatched_dets:
             trk = KalmanBoxTracker(dets[i, :], self.next_id)
             self.next_id += 1
             self.trackers.append(trk)
-            
+
         i = len(self.trackers)
         for trk in reversed(self.trackers):
             d = trk.get_state()[0]
-            if (trk.time_since_update < 1) and (trk.hit_streak >= self.min_hits or self.frame_count <= self.min_hits):
-                ret.append(Track(
-                    track_id=trk.id,
-                    bbox=[float(d[0]), float(d[1]), float(d[2]), float(d[3])],
-                    velocity=trk.get_velocity(),
-                    age=trk.age
-                ))
+            if (trk.time_since_update < 1) and (
+                trk.hit_streak >= self.min_hits or self.frame_count <= self.min_hits
+            ):
+                ret.append(
+                    Track(
+                        track_id=trk.id,
+                        bbox=[float(d[0]), float(d[1]), float(d[2]), float(d[3])],
+                        velocity=trk.get_velocity(),
+                        age=trk.age,
+                    )
+                )
             i -= 1
-            # Remove dead trackers
             if trk.time_since_update > self.max_age:
                 self.trackers.pop(i)
-                
+
         return ret
 
     def associate_detections_to_trackers(self, detections, trackers):
         """
-        Assigns detections to tracked object (both represented as bounding boxes)
+        Assigns detections to tracked objects.
         """
         if len(trackers) == 0:
-            return np.empty((0, 2), dtype=int), np.arange(len(detections)), np.empty((0, 5), dtype=int)
+            return (
+                np.empty((0, 2), dtype=int),
+                np.arange(len(detections)),
+                np.empty((0, 5), dtype=int),
+            )
 
         iou_matrix = iou_batch(detections, trackers)
 
@@ -197,13 +227,12 @@ class KalmanTracker(BaseTracker):
         for d, det in enumerate(detections):
             if d not in matched_indices[:, 0]:
                 unmatched_detections.append(d)
-        
+
         unmatched_trackers = []
         for t, trk in enumerate(trackers):
             if t not in matched_indices[:, 1]:
                 unmatched_trackers.append(t)
 
-        # Filter out matches with low IOU
         matches = []
         for m in matched_indices:
             if iou_matrix[m[0], m[1]] < self.iou_threshold:
@@ -211,7 +240,7 @@ class KalmanTracker(BaseTracker):
                 unmatched_trackers.append(m[1])
             else:
                 matches.append(m.reshape(1, 2))
-        
+
         if len(matches) == 0:
             matches = np.empty((0, 2), dtype=int)
         else:

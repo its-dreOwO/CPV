@@ -1,0 +1,251 @@
+{
+  "nodes": [
+    {
+      "id": "document:CLAUDE.md",
+      "type": "document",
+      "name": "CLAUDE.md",
+      "filePath": "CLAUDE.md",
+      "summary": "Developer instructions and guidance file for Claude Code in the CPV301 (Computer Vision) course project (RT-DR-003: Drone Obstacle Avoidance). It covers the project context, lists essential setup/run/train/evaluate/test/lint commands, describes the core three-stage CV pipeline (detection, tracking, avoidance planning) with its Base classes and concrete subclasses, specifies model comparison choices (YOLOv8n, YOLOv8m, RT-DETR-L), tracks current pipeline status, and outlines coding conventions such as the 88-character line limit.",
+      "tags": [
+        "docs",
+        "developer-instructions",
+        "architecture-overview",
+        "commands-list",
+        "conventions"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "document:README.md",
+      "type": "document",
+      "name": "README.md",
+      "filePath": "README.md",
+      "summary": "The main project overview and entry point documentation for CPV301 - Drone Obstacle Avoidance (RT-DR-003). It presents the primary research question regarding dynamic obstacle avoidance, shows the directory tree layout for data, models, notebooks, reports, scripts, src, and tests, provides setup instructions with python virtual environments, details command examples to run the demo, train models, evaluate weights, run pytest, and outlines the automated formatting and linting CI process.",
+      "tags": [
+        "docs",
+        "project-overview",
+        "directory-structure",
+        "setup-guide",
+        "ci-cd"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "document:flake8_results.txt",
+      "type": "document",
+      "name": "flake8_results.txt",
+      "filePath": "flake8_results.txt",
+      "summary": "Static lint analysis report containing five E501 line-too-long style violations (exceeding the configured 88-character limit). The violations are located within the geometric planner implementation and the Kalman multi-object tracker implementation.",
+      "tags": [
+        "docs",
+        "flake8",
+        "lint-report",
+        "violations",
+        "code-quality"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "config:pyproject.toml",
+      "type": "config",
+      "name": "pyproject.toml",
+      "filePath": "pyproject.toml",
+      "summary": "Configuration file for the Black python code formatter. Specifies a line length of 88 characters, targets Python versions 3.10 through 3.12, and excludes directories such as .git, .venv, build, dist, notebooks, and CPV_notes from being formatted.",
+      "tags": [
+        "config",
+        "black",
+        "formatter",
+        "code-style",
+        "exclusion-rules"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "config:requirements.txt",
+      "type": "config",
+      "name": "requirements.txt",
+      "filePath": "requirements.txt",
+      "summary": "Core package dependency manifest for the CPV301 project. Specifies versions for essential OpenCV image processing, PyTorch and Torchvision deep learning, Ultralytics YOLOv8 object detection, FilterPy and SciPy tracking algorithms, data visualization tools (Matplotlib, Seaborn, Pandas), scikit-learn, and developer utilities such as Black, Flake8, and Pytest with coverage tracking.",
+      "tags": [
+        "config",
+        "dependencies",
+        "environment-setup",
+        "deep-learning",
+        "computer-vision",
+        "python-packages"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "config:setup.cfg",
+      "type": "config",
+      "name": "setup.cfg",
+      "filePath": "setup.cfg",
+      "summary": "Configuration manifest specifying settings for Flake8 linting and Pytest unit testing. Sets the Flake8 max-line-length to 88, ignores spacing/formatting compatibility rules (E203, W503) for Black, and ignores temporary/dependency directories. Configures Pytest to run tests in the tests folder and generate term-missing coverage reports for the src package.",
+      "tags": [
+        "config",
+        "flake8",
+        "pytest",
+        "lint-config",
+        "test-config"
+      ],
+      "complexity": "simple"
+    }
+  ],
+  "edges": [
+    {
+      "source": "document:README.md",
+      "target": "file:main.py",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:README.md",
+      "target": "file:scripts/train.py",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:README.md",
+      "target": "file:scripts/evaluate.py",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:README.md",
+      "target": "config:requirements.txt",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:README.md",
+      "target": "config:setup.cfg",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:CLAUDE.md",
+      "target": "file:main.py",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:CLAUDE.md",
+      "target": "document:README.md",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:CLAUDE.md",
+      "target": "document:docs/training_pipeline.md",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:CLAUDE.md",
+      "target": "file:scripts/train.py",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:CLAUDE.md",
+      "target": "file:scripts/evaluate.py",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:CLAUDE.md",
+      "target": "file:scripts/preprocess.py",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:CLAUDE.md",
+      "target": "file:scripts/validate_data.py",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:CLAUDE.md",
+      "target": "file:src/detection/yolo_detector.py",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:CLAUDE.md",
+      "target": "file:src/tracking/kalman_tracker.py",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:CLAUDE.md",
+      "target": "file:src/avoidance/geometric_planner.py",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "config:requirements.txt",
+      "target": "file:main.py",
+      "type": "configures",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "config:requirements.txt",
+      "target": "file:scripts/train.py",
+      "type": "configures",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "config:requirements.txt",
+      "target": "file:scripts/evaluate.py",
+      "type": "configures",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "config:setup.cfg",
+      "target": "document:flake8_results.txt",
+      "type": "configures",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "config:setup.cfg",
+      "target": "config:pyproject.toml",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:flake8_results.txt",
+      "target": "file:src/avoidance/geometric_planner.py",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:flake8_results.txt",
+      "target": "file:src/tracking/kalman_tracker.py",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    }
+  ]
+}

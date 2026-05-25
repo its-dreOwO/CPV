@@ -1,0 +1,361 @@
+{
+  "schemaVersion": 1,
+  "algorithm": "louvain",
+  "totalFiles": 50,
+  "totalBatches": 3,
+  "exportsByPath": {
+    ".github/CODEOWNERS": [],
+    ".understand-anything/.understandignore": [],
+    "data/processed/.gitkeep": [],
+    "data/raw/.gitkeep": [],
+    "data/samples/.gitkeep": [],
+    "docs/SU26_AI2013_CPV301.xlsx": [],
+    "implementation_plan.md.resolved": [],
+    "main.py": [
+      "parse_args",
+      "main"
+    ],
+    "models/.gitkeep": [],
+    "reports/R1/.gitkeep": [],
+    "reports/R2/.gitkeep": [],
+    "reports/R3/.gitkeep": [],
+    "reports/R4/.gitkeep": [],
+    "scripts/evaluate.py": [
+      "parse_args",
+      "main"
+    ],
+    "scripts/preprocess.py": [
+      "parse_args",
+      "dominant_coarse_class",
+      "remap_label",
+      "collect_samples",
+      "main"
+    ],
+    "scripts/train.py": [
+      "parse_args",
+      "load_config",
+      "main"
+    ],
+    "scripts/validate_data.py": [
+      "parse_args",
+      "_merge",
+      "main"
+    ],
+    "src/__init__.py": [],
+    "src/avoidance/__init__.py": [],
+    "src/avoidance/geometric_planner.py": [
+      "GeometricPlanner"
+    ],
+    "src/avoidance/planner.py": [
+      "BaseAvoidancePlanner"
+    ],
+    "src/detection/__init__.py": [],
+    "src/detection/detector.py": [
+      "Detection",
+      "BaseDetector"
+    ],
+    "src/detection/yolo_detector.py": [
+      "YoloDetector"
+    ],
+    "src/tracking/__init__.py": [],
+    "src/tracking/kalman_tracker.py": [
+      "iou_batch",
+      "KalmanBoxTracker",
+      "KalmanTracker"
+    ],
+    "src/tracking/tracker.py": [
+      "Track",
+      "BaseTracker"
+    ],
+    "src/utils/__init__.py": [],
+    "src/utils/data_validation.py": [
+      "VideoInfo",
+      "ValidationReport",
+      "_list_images",
+      "_list_videos",
+      "_check_image",
+      "_check_video",
+      "validate_videos",
+      "_parse_yolo_line",
+      "_hash_image",
+      "validate_dataset",
+      "print_report"
+    ],
+    "src/utils/visualizer.py": [
+      "draw_tracks"
+    ],
+    "tests/__init__.py": [],
+    "tests/test_data_validation.py": [
+      "_write_image",
+      "test_parse_yolo_line_valid",
+      "test_parse_yolo_line_field_count",
+      "test_parse_yolo_line_class_range",
+      "test_parse_yolo_line_coord_out_of_range",
+      "test_parse_yolo_line_zero_dim",
+      "test_validate_dataset_happy_path",
+      "test_validate_dataset_missing_label",
+      "test_validate_videos_missing_dir",
+      "test_validate_videos_empty_dir"
+    ],
+    "tests/test_detection.py": [
+      "test_detection_fields"
+    ],
+    "tests/test_integration.py": [
+      "test_tracker_planner_integration",
+      "test_planner_repulsion"
+    ],
+    "tests/test_tracking.py": [
+      "test_track_default_velocity"
+    ]
+  },
+  "batches": [
+    {
+      "batchIndex": 7,
+      "files": [
+        {
+          "path": "CLAUDE.md",
+          "language": "markdown",
+          "sizeLines": 124,
+          "fileCategory": "docs"
+        },
+        {
+          "path": "README.md",
+          "language": "markdown",
+          "sizeLines": 69,
+          "fileCategory": "docs"
+        },
+        {
+          "path": "flake8_results.txt",
+          "language": "txt",
+          "sizeLines": 5,
+          "fileCategory": "docs"
+        },
+        {
+          "path": "pyproject.toml",
+          "language": "toml",
+          "sizeLines": 13,
+          "fileCategory": "config"
+        },
+        {
+          "path": "requirements.txt",
+          "language": "txt",
+          "sizeLines": 29,
+          "fileCategory": "docs"
+        },
+        {
+          "path": "setup.cfg",
+          "language": "config",
+          "sizeLines": 15,
+          "fileCategory": "config"
+        }
+      ],
+      "batchImportData": {
+        "CLAUDE.md": [],
+        "README.md": [],
+        "flake8_results.txt": [],
+        "pyproject.toml": [],
+        "requirements.txt": [],
+        "setup.cfg": []
+      },
+      "neighborMap": {}
+    },
+    {
+      "batchIndex": 8,
+      "files": [
+        {
+          "path": "configs/rtdetr.yaml",
+          "language": "yaml",
+          "sizeLines": 9,
+          "fileCategory": "config"
+        },
+        {
+          "path": "configs/visdrone5.yaml",
+          "language": "yaml",
+          "sizeLines": 24,
+          "fileCategory": "config"
+        },
+        {
+          "path": "configs/yolov8m.yaml",
+          "language": "yaml",
+          "sizeLines": 9,
+          "fileCategory": "config"
+        },
+        {
+          "path": "configs/yolov8n.yaml",
+          "language": "yaml",
+          "sizeLines": 9,
+          "fileCategory": "config"
+        }
+      ],
+      "batchImportData": {
+        "configs/rtdetr.yaml": [],
+        "configs/visdrone5.yaml": [],
+        "configs/yolov8m.yaml": [],
+        "configs/yolov8n.yaml": []
+      },
+      "neighborMap": {}
+    },
+    {
+      "batchIndex": 9,
+      "files": [
+        {
+          "path": ".github/CODEOWNERS",
+          "language": "unknown",
+          "sizeLines": 2,
+          "fileCategory": "code"
+        },
+        {
+          "path": ".understand-anything/.understandignore",
+          "language": "unknown",
+          "sizeLines": 51,
+          "fileCategory": "code"
+        },
+        {
+          "path": "data/processed/.gitkeep",
+          "language": "unknown",
+          "sizeLines": 0,
+          "fileCategory": "code"
+        },
+        {
+          "path": "data/raw/.gitkeep",
+          "language": "unknown",
+          "sizeLines": 0,
+          "fileCategory": "code"
+        },
+        {
+          "path": "data/samples/.gitkeep",
+          "language": "unknown",
+          "sizeLines": 0,
+          "fileCategory": "code"
+        },
+        {
+          "path": "docs/SU26_AI2013_CPV301.xlsx",
+          "language": "xlsx",
+          "sizeLines": 1321,
+          "fileCategory": "code"
+        },
+        {
+          "path": "docs/training_pipeline.md",
+          "language": "markdown",
+          "sizeLines": 259,
+          "fileCategory": "docs"
+        },
+        {
+          "path": "implementation_plan.md.resolved",
+          "language": "resolved",
+          "sizeLines": 33,
+          "fileCategory": "code"
+        },
+        {
+          "path": "models/.gitkeep",
+          "language": "unknown",
+          "sizeLines": 0,
+          "fileCategory": "code"
+        },
+        {
+          "path": "reports/R1/.gitkeep",
+          "language": "unknown",
+          "sizeLines": 0,
+          "fileCategory": "code"
+        },
+        {
+          "path": "reports/R2/.gitkeep",
+          "language": "unknown",
+          "sizeLines": 0,
+          "fileCategory": "code"
+        },
+        {
+          "path": "reports/R3/.gitkeep",
+          "language": "unknown",
+          "sizeLines": 0,
+          "fileCategory": "code"
+        },
+        {
+          "path": "reports/R4/.gitkeep",
+          "language": "unknown",
+          "sizeLines": 0,
+          "fileCategory": "code"
+        },
+        {
+          "path": "scripts/evaluate.py",
+          "language": "python",
+          "sizeLines": 24,
+          "fileCategory": "code"
+        },
+        {
+          "path": "scripts/preprocess.py",
+          "language": "python",
+          "sizeLines": 152,
+          "fileCategory": "code"
+        },
+        {
+          "path": "scripts/train.py",
+          "language": "python",
+          "sizeLines": 67,
+          "fileCategory": "code"
+        },
+        {
+          "path": "src/__init__.py",
+          "language": "python",
+          "sizeLines": 0,
+          "fileCategory": "code"
+        },
+        {
+          "path": "src/avoidance/__init__.py",
+          "language": "python",
+          "sizeLines": 0,
+          "fileCategory": "code"
+        },
+        {
+          "path": "src/detection/__init__.py",
+          "language": "python",
+          "sizeLines": 0,
+          "fileCategory": "code"
+        },
+        {
+          "path": "src/tracking/__init__.py",
+          "language": "python",
+          "sizeLines": 0,
+          "fileCategory": "code"
+        },
+        {
+          "path": "src/utils/__init__.py",
+          "language": "python",
+          "sizeLines": 0,
+          "fileCategory": "code"
+        },
+        {
+          "path": "tests/__init__.py",
+          "language": "python",
+          "sizeLines": 0,
+          "fileCategory": "code"
+        }
+      ],
+      "batchImportData": {
+        ".github/CODEOWNERS": [],
+        ".understand-anything/.understandignore": [],
+        "data/processed/.gitkeep": [],
+        "data/raw/.gitkeep": [],
+        "data/samples/.gitkeep": [],
+        "docs/SU26_AI2013_CPV301.xlsx": [],
+        "docs/training_pipeline.md": [],
+        "implementation_plan.md.resolved": [],
+        "models/.gitkeep": [],
+        "reports/R1/.gitkeep": [],
+        "reports/R2/.gitkeep": [],
+        "reports/R3/.gitkeep": [],
+        "reports/R4/.gitkeep": [],
+        "scripts/evaluate.py": [],
+        "scripts/preprocess.py": [],
+        "scripts/train.py": [],
+        "src/__init__.py": [],
+        "src/avoidance/__init__.py": [],
+        "src/detection/__init__.py": [],
+        "src/tracking/__init__.py": [],
+        "src/utils/__init__.py": [],
+        "tests/__init__.py": []
+      },
+      "neighborMap": {}
+    }
+  ]
+}

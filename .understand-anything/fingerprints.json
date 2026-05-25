@@ -1,0 +1,1012 @@
+{
+  "version": "1.0.0",
+  "gitCommitHash": "a2fe4747cb8ed496a7b0db6136b7531c28d2233b",
+  "generatedAt": "2026-05-24T15:02:50.472Z",
+  "files": {
+    ".github/CODEOWNERS": {
+      "filePath": ".github/CODEOWNERS",
+      "contentHash": "4420977bda419f0685007481dccb44c12090df1cd45ce2b9c8582d36fdabc335",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 3,
+      "hasStructuralAnalysis": false
+    },
+    ".github/workflows/lint.yml": {
+      "filePath": ".github/workflows/lint.yml",
+      "contentHash": "2518e57b4d4a46864bb6dc13449a5b74f8ceadf9f3dab35201b78e9108067332",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 28,
+      "hasStructuralAnalysis": true
+    },
+    ".understand-anything/.understandignore": {
+      "filePath": ".understand-anything/.understandignore",
+      "contentHash": "13817e112449e5de9b44c02a64c2ed9f23b6f59c1b2b7865185329de5b8361fd",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 52,
+      "hasStructuralAnalysis": false
+    },
+    "CLAUDE.md": {
+      "filePath": "CLAUDE.md",
+      "contentHash": "75bbfdcde3e8e8973152581b85964d018fa0ab7a363cd70a702ad03f39535b1b",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 102,
+      "hasStructuralAnalysis": true
+    },
+    "data/processed/.gitkeep": {
+      "filePath": "data/processed/.gitkeep",
+      "contentHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 1,
+      "hasStructuralAnalysis": false
+    },
+    "data/raw/.gitkeep": {
+      "filePath": "data/raw/.gitkeep",
+      "contentHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 1,
+      "hasStructuralAnalysis": false
+    },
+    "data/samples/.gitkeep": {
+      "filePath": "data/samples/.gitkeep",
+      "contentHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 1,
+      "hasStructuralAnalysis": false
+    },
+    "docs/SU26_AI2013_CPV301.xlsx": {
+      "filePath": "docs/SU26_AI2013_CPV301.xlsx",
+      "contentHash": "645acaa4d08eabf6161772f1c082e651b5105d9745ef5b6d0e010753b090c07e",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 1322,
+      "hasStructuralAnalysis": false
+    },
+    "docs/training_pipeline.md": {
+      "filePath": "docs/training_pipeline.md",
+      "contentHash": "8d9707ce148b4db717c7e1e1a5938c487de67a99d432d3afccd5408180b5cd72",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 260,
+      "hasStructuralAnalysis": true
+    },
+    "main.py": {
+      "filePath": "main.py",
+      "contentHash": "44cb9e8a88f05396e26abfab0dbe6f78f84f89de43a9780263591237632c6a26",
+      "functions": [
+        {
+          "name": "parse_args",
+          "params": [],
+          "exported": true,
+          "lineCount": 15
+        },
+        {
+          "name": "main",
+          "params": [],
+          "exported": true,
+          "lineCount": 50
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "argparse",
+          "specifiers": [
+            "argparse"
+          ]
+        },
+        {
+          "source": "cv2",
+          "specifiers": [
+            "cv2"
+          ]
+        },
+        {
+          "source": "torch",
+          "specifiers": [
+            "torch"
+          ]
+        },
+        {
+          "source": "src.detection.yolo_detector",
+          "specifiers": [
+            "YoloDetector"
+          ]
+        },
+        {
+          "source": "src.tracking.kalman_tracker",
+          "specifiers": [
+            "KalmanTracker"
+          ]
+        },
+        {
+          "source": "src.avoidance.geometric_planner",
+          "specifiers": [
+            "GeometricPlanner"
+          ]
+        },
+        {
+          "source": "src.utils.visualizer",
+          "specifiers": [
+            "draw_tracks"
+          ]
+        }
+      ],
+      "exports": [
+        "parse_args",
+        "main"
+      ],
+      "totalLines": 84,
+      "hasStructuralAnalysis": true
+    },
+    "models/.gitkeep": {
+      "filePath": "models/.gitkeep",
+      "contentHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 1,
+      "hasStructuralAnalysis": false
+    },
+    "pyproject.toml": {
+      "filePath": "pyproject.toml",
+      "contentHash": "66b85fe1a2ea9da8700e2ee7757d2617abc963507911a2b30fd12c0d4d241eb2",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 13,
+      "hasStructuralAnalysis": true
+    },
+    "README.md": {
+      "filePath": "README.md",
+      "contentHash": "9d92a1a839524104efbb57271e7c6214e8429dfa3f1c6e16fad80a206fa3e101",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 70,
+      "hasStructuralAnalysis": true
+    },
+    "reports/R1/.gitkeep": {
+      "filePath": "reports/R1/.gitkeep",
+      "contentHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 1,
+      "hasStructuralAnalysis": false
+    },
+    "reports/R2/.gitkeep": {
+      "filePath": "reports/R2/.gitkeep",
+      "contentHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 1,
+      "hasStructuralAnalysis": false
+    },
+    "reports/R3/.gitkeep": {
+      "filePath": "reports/R3/.gitkeep",
+      "contentHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 1,
+      "hasStructuralAnalysis": false
+    },
+    "reports/R4/.gitkeep": {
+      "filePath": "reports/R4/.gitkeep",
+      "contentHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 1,
+      "hasStructuralAnalysis": false
+    },
+    "requirements.txt": {
+      "filePath": "requirements.txt",
+      "contentHash": "5af7a45794fbad4fd03ffccafb017a34790a9841a82edc5384f26451871867b8",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 29,
+      "hasStructuralAnalysis": false
+    },
+    "scripts/evaluate.py": {
+      "filePath": "scripts/evaluate.py",
+      "contentHash": "f737ed18de5d45c759781efc198edfc2ea3264036f11400aabad2616af9dda3c",
+      "functions": [
+        {
+          "name": "parse_args",
+          "params": [],
+          "exported": true,
+          "lineCount": 8
+        },
+        {
+          "name": "main",
+          "params": [],
+          "exported": true,
+          "lineCount": 5
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "argparse",
+          "specifiers": [
+            "argparse"
+          ]
+        }
+      ],
+      "exports": [
+        "parse_args",
+        "main"
+      ],
+      "totalLines": 25,
+      "hasStructuralAnalysis": true
+    },
+    "scripts/train.py": {
+      "filePath": "scripts/train.py",
+      "contentHash": "40c34b534591994fb080b907425e5581372184687d14d4d3ec103e63a87b2645",
+      "functions": [
+        {
+          "name": "parse_args",
+          "params": [],
+          "exported": true,
+          "lineCount": 6
+        },
+        {
+          "name": "main",
+          "params": [],
+          "exported": true,
+          "lineCount": 6
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "argparse",
+          "specifiers": [
+            "argparse"
+          ]
+        }
+      ],
+      "exports": [
+        "parse_args",
+        "main"
+      ],
+      "totalLines": 24,
+      "hasStructuralAnalysis": true
+    },
+    "scripts/validate_data.py": {
+      "filePath": "scripts/validate_data.py",
+      "contentHash": "117c152b4217321774f17815ba5615f71efa0ec8e7b35a6fec5387282b54b8d1",
+      "functions": [
+        {
+          "name": "parse_args",
+          "params": [],
+          "exported": true,
+          "lineCount": 14
+        },
+        {
+          "name": "_merge",
+          "params": [
+            "into",
+            "other"
+          ],
+          "returnType": "ValidationReport",
+          "exported": true,
+          "lineCount": 14
+        },
+        {
+          "name": "main",
+          "params": [],
+          "exported": true,
+          "lineCount": 26
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "argparse",
+          "specifiers": [
+            "argparse"
+          ]
+        },
+        {
+          "source": "sys",
+          "specifiers": [
+            "sys"
+          ]
+        },
+        {
+          "source": "pathlib",
+          "specifiers": [
+            "Path"
+          ]
+        },
+        {
+          "source": "src.utils.data_validation",
+          "specifiers": [
+            "ValidationReport",
+            "print_report",
+            "validate_dataset",
+            "validate_videos"
+          ]
+        }
+      ],
+      "exports": [
+        "parse_args",
+        "_merge",
+        "main"
+      ],
+      "totalLines": 93,
+      "hasStructuralAnalysis": true
+    },
+    "setup.cfg": {
+      "filePath": "setup.cfg",
+      "contentHash": "5435855f640d3c40c3843fd8714ae2fb4addc8713ee1bce815982f70d411486b",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 15,
+      "hasStructuralAnalysis": false
+    },
+    "src/__init__.py": {
+      "filePath": "src/__init__.py",
+      "contentHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 1,
+      "hasStructuralAnalysis": true
+    },
+    "src/avoidance/__init__.py": {
+      "filePath": "src/avoidance/__init__.py",
+      "contentHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 1,
+      "hasStructuralAnalysis": true
+    },
+    "src/avoidance/planner.py": {
+      "filePath": "src/avoidance/planner.py",
+      "contentHash": "165b794da40de34e35024a97620113895a3f8ae24610578b8221c7c8397ac642",
+      "functions": [],
+      "classes": [
+        {
+          "name": "BaseAvoidancePlanner",
+          "methods": [
+            "plan"
+          ],
+          "properties": [],
+          "exported": true,
+          "lineCount": 4
+        }
+      ],
+      "imports": [
+        {
+          "source": "typing",
+          "specifiers": [
+            "List",
+            "Tuple"
+          ]
+        },
+        {
+          "source": "src.tracking.tracker",
+          "specifiers": [
+            "Track"
+          ]
+        }
+      ],
+      "exports": [
+        "BaseAvoidancePlanner"
+      ],
+      "totalLines": 10,
+      "hasStructuralAnalysis": true
+    },
+    "src/detection/__init__.py": {
+      "filePath": "src/detection/__init__.py",
+      "contentHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 1,
+      "hasStructuralAnalysis": true
+    },
+    "src/detection/detector.py": {
+      "filePath": "src/detection/detector.py",
+      "contentHash": "5baf58a6553b751992646c25a01b2be884be0c1090932c94e9b0f9eac6613289",
+      "functions": [],
+      "classes": [
+        {
+          "name": "Detection",
+          "methods": [],
+          "properties": [
+            "bbox",
+            "confidence",
+            "class_id",
+            "class_name"
+          ],
+          "exported": true,
+          "lineCount": 5
+        },
+        {
+          "name": "BaseDetector",
+          "methods": [
+            "detect"
+          ],
+          "properties": [],
+          "exported": true,
+          "lineCount": 3
+        }
+      ],
+      "imports": [
+        {
+          "source": "dataclasses",
+          "specifiers": [
+            "dataclass"
+          ]
+        },
+        {
+          "source": "typing",
+          "specifiers": [
+            "List"
+          ]
+        },
+        {
+          "source": "numpy",
+          "specifiers": [
+            "np"
+          ]
+        }
+      ],
+      "exports": [
+        "Detection",
+        "BaseDetector"
+      ],
+      "totalLines": 18,
+      "hasStructuralAnalysis": true
+    },
+    "src/tracking/__init__.py": {
+      "filePath": "src/tracking/__init__.py",
+      "contentHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 1,
+      "hasStructuralAnalysis": true
+    },
+    "src/tracking/tracker.py": {
+      "filePath": "src/tracking/tracker.py",
+      "contentHash": "d67b2231f91ea5c62b4841bedeaa7cbdaaa7c9bf3c5d06be13c08432e3e470d5",
+      "functions": [],
+      "classes": [
+        {
+          "name": "Track",
+          "methods": [],
+          "properties": [
+            "track_id",
+            "bbox",
+            "velocity",
+            "age"
+          ],
+          "exported": true,
+          "lineCount": 5
+        },
+        {
+          "name": "BaseTracker",
+          "methods": [
+            "update"
+          ],
+          "properties": [],
+          "exported": true,
+          "lineCount": 3
+        }
+      ],
+      "imports": [
+        {
+          "source": "dataclasses",
+          "specifiers": [
+            "dataclass",
+            "field"
+          ]
+        },
+        {
+          "source": "typing",
+          "specifiers": [
+            "List"
+          ]
+        },
+        {
+          "source": "src.detection.detector",
+          "specifiers": [
+            "Detection"
+          ]
+        }
+      ],
+      "exports": [
+        "Track",
+        "BaseTracker"
+      ],
+      "totalLines": 18,
+      "hasStructuralAnalysis": true
+    },
+    "src/utils/__init__.py": {
+      "filePath": "src/utils/__init__.py",
+      "contentHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 1,
+      "hasStructuralAnalysis": true
+    },
+    "src/utils/data_validation.py": {
+      "filePath": "src/utils/data_validation.py",
+      "contentHash": "44c6757cb76541ac4c59eecf9f5c5a1f22372761143bbbb3124e26e40cd04d05",
+      "functions": [
+        {
+          "name": "_list_images",
+          "params": [
+            "images_dir"
+          ],
+          "returnType": "List[Path]",
+          "exported": true,
+          "lineCount": 2
+        },
+        {
+          "name": "_list_videos",
+          "params": [
+            "videos_dir"
+          ],
+          "returnType": "List[Path]",
+          "exported": true,
+          "lineCount": 2
+        },
+        {
+          "name": "_check_image",
+          "params": [
+            "path"
+          ],
+          "returnType": "Optional[Tuple[int, int]]",
+          "exported": true,
+          "lineCount": 8
+        },
+        {
+          "name": "_check_video",
+          "params": [
+            "path"
+          ],
+          "returnType": "Optional[VideoInfo]",
+          "exported": true,
+          "lineCount": 23
+        },
+        {
+          "name": "validate_videos",
+          "params": [
+            "videos_dir"
+          ],
+          "returnType": "ValidationReport",
+          "exported": true,
+          "lineCount": 12
+        },
+        {
+          "name": "_parse_yolo_line",
+          "params": [
+            "line",
+            "num_classes"
+          ],
+          "returnType": "Optional[str]",
+          "exported": true,
+          "lineCount": 20
+        },
+        {
+          "name": "_hash_image",
+          "params": [
+            "path"
+          ],
+          "returnType": "str",
+          "exported": true,
+          "lineCount": 2
+        },
+        {
+          "name": "validate_dataset",
+          "params": [
+            "images_dir",
+            "labels_dir",
+            "num_classes",
+            "check_duplicates"
+          ],
+          "returnType": "ValidationReport",
+          "exported": true,
+          "lineCount": 52
+        },
+        {
+          "name": "print_report",
+          "params": [
+            "report"
+          ],
+          "returnType": "None",
+          "exported": true,
+          "lineCount": 57
+        }
+      ],
+      "classes": [
+        {
+          "name": "VideoInfo",
+          "methods": [],
+          "properties": [
+            "path",
+            "width",
+            "height",
+            "fps",
+            "frame_count"
+          ],
+          "exported": true,
+          "lineCount": 6
+        },
+        {
+          "name": "ValidationReport",
+          "methods": [
+            "ok"
+          ],
+          "properties": [
+            "total_images",
+            "total_labels",
+            "total_videos",
+            "unreadable_images",
+            "missing_labels",
+            "orphan_labels",
+            "invalid_labels",
+            "duplicates",
+            "class_counts",
+            "image_sizes",
+            "unreadable_videos",
+            "videos"
+          ],
+          "exported": true,
+          "lineCount": 22
+        }
+      ],
+      "imports": [
+        {
+          "source": "hashlib",
+          "specifiers": [
+            "hashlib"
+          ]
+        },
+        {
+          "source": "collections",
+          "specifiers": [
+            "Counter"
+          ]
+        },
+        {
+          "source": "dataclasses",
+          "specifiers": [
+            "dataclass",
+            "field"
+          ]
+        },
+        {
+          "source": "pathlib",
+          "specifiers": [
+            "Path"
+          ]
+        },
+        {
+          "source": "typing",
+          "specifiers": [
+            "Iterable",
+            "List",
+            "Optional",
+            "Tuple"
+          ]
+        },
+        {
+          "source": "cv2",
+          "specifiers": [
+            "cv2"
+          ]
+        },
+        {
+          "source": "numpy",
+          "specifiers": [
+            "np"
+          ]
+        }
+      ],
+      "exports": [
+        "VideoInfo",
+        "ValidationReport",
+        "_list_images",
+        "_list_videos",
+        "_check_image",
+        "_check_video",
+        "validate_videos",
+        "_parse_yolo_line",
+        "_hash_image",
+        "validate_dataset",
+        "print_report"
+      ],
+      "totalLines": 251,
+      "hasStructuralAnalysis": true
+    },
+    "src/utils/visualizer.py": {
+      "filePath": "src/utils/visualizer.py",
+      "contentHash": "d5df7def0bc9fa49564336e63689892a92152d9f34e66ed181bd7d35008086f7",
+      "functions": [
+        {
+          "name": "draw_tracks",
+          "params": [
+            "frame",
+            "tracks",
+            "avoidance_cmd"
+          ],
+          "returnType": "np.ndarray",
+          "exported": true,
+          "lineCount": 29
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "typing",
+          "specifiers": [
+            "List"
+          ]
+        },
+        {
+          "source": "cv2",
+          "specifiers": [
+            "cv2"
+          ]
+        },
+        {
+          "source": "numpy",
+          "specifiers": [
+            "np"
+          ]
+        },
+        {
+          "source": "src.tracking.tracker",
+          "specifiers": [
+            "Track"
+          ]
+        }
+      ],
+      "exports": [
+        "draw_tracks"
+      ],
+      "totalLines": 38,
+      "hasStructuralAnalysis": true
+    },
+    "tests/__init__.py": {
+      "filePath": "tests/__init__.py",
+      "contentHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 1,
+      "hasStructuralAnalysis": true
+    },
+    "tests/test_data_validation.py": {
+      "filePath": "tests/test_data_validation.py",
+      "contentHash": "d12c96ced7745930036ac510a2ce6bb9c52c5e818b114410c9e7b31a03160960",
+      "functions": [
+        {
+          "name": "_write_image",
+          "params": [
+            "path",
+            "w",
+            "h"
+          ],
+          "returnType": "None",
+          "exported": true,
+          "lineCount": 3
+        },
+        {
+          "name": "test_parse_yolo_line_valid",
+          "params": [],
+          "exported": true,
+          "lineCount": 2
+        },
+        {
+          "name": "test_parse_yolo_line_field_count",
+          "params": [],
+          "exported": true,
+          "lineCount": 2
+        },
+        {
+          "name": "test_parse_yolo_line_class_range",
+          "params": [],
+          "exported": true,
+          "lineCount": 3
+        },
+        {
+          "name": "test_parse_yolo_line_coord_out_of_range",
+          "params": [],
+          "exported": true,
+          "lineCount": 3
+        },
+        {
+          "name": "test_parse_yolo_line_zero_dim",
+          "params": [],
+          "exported": true,
+          "lineCount": 3
+        },
+        {
+          "name": "test_validate_dataset_happy_path",
+          "params": [
+            "tmp_path"
+          ],
+          "exported": true,
+          "lineCount": 14
+        },
+        {
+          "name": "test_validate_dataset_missing_label",
+          "params": [
+            "tmp_path"
+          ],
+          "exported": true,
+          "lineCount": 10
+        },
+        {
+          "name": "test_validate_videos_missing_dir",
+          "params": [
+            "tmp_path"
+          ],
+          "exported": true,
+          "lineCount": 3
+        },
+        {
+          "name": "test_validate_videos_empty_dir",
+          "params": [
+            "tmp_path"
+          ],
+          "exported": true,
+          "lineCount": 4
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "pathlib",
+          "specifiers": [
+            "Path"
+          ]
+        },
+        {
+          "source": "cv2",
+          "specifiers": [
+            "cv2"
+          ]
+        },
+        {
+          "source": "numpy",
+          "specifiers": [
+            "np"
+          ]
+        },
+        {
+          "source": "pytest",
+          "specifiers": [
+            "pytest"
+          ]
+        },
+        {
+          "source": "src.utils.data_validation",
+          "specifiers": [
+            "_parse_yolo_line",
+            "validate_dataset",
+            "validate_videos"
+          ]
+        }
+      ],
+      "exports": [
+        "_write_image",
+        "test_parse_yolo_line_valid",
+        "test_parse_yolo_line_field_count",
+        "test_parse_yolo_line_class_range",
+        "test_parse_yolo_line_coord_out_of_range",
+        "test_parse_yolo_line_zero_dim",
+        "test_validate_dataset_happy_path",
+        "test_validate_dataset_missing_label",
+        "test_validate_videos_missing_dir",
+        "test_validate_videos_empty_dir"
+      ],
+      "totalLines": 79,
+      "hasStructuralAnalysis": true
+    },
+    "tests/test_detection.py": {
+      "filePath": "tests/test_detection.py",
+      "contentHash": "9f0383848651c189988c0b8579adb8a7eca4d6c7c21a891e2b0c0d73c0f8e29f",
+      "functions": [
+        {
+          "name": "test_detection_fields",
+          "params": [],
+          "exported": true,
+          "lineCount": 6
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "src.detection.detector",
+          "specifiers": [
+            "Detection"
+          ]
+        }
+      ],
+      "exports": [
+        "test_detection_fields"
+      ],
+      "totalLines": 10,
+      "hasStructuralAnalysis": true
+    },
+    "tests/test_tracking.py": {
+      "filePath": "tests/test_tracking.py",
+      "contentHash": "6b1fa0e17aee93a1cfc1736ba0bc20ea175e22d9b0691c8fffe343a6db582107",
+      "functions": [
+        {
+          "name": "test_track_default_velocity",
+          "params": [],
+          "exported": true,
+          "lineCount": 4
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "src.tracking.tracker",
+          "specifiers": [
+            "Track"
+          ]
+        }
+      ],
+      "exports": [
+        "test_track_default_velocity"
+      ],
+      "totalLines": 8,
+      "hasStructuralAnalysis": true
+    }
+  }
+}

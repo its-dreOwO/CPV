@@ -1,0 +1,139 @@
+{
+  "nodes": [
+    {
+      "id": "config:configs/rtdetr.yaml",
+      "type": "config",
+      "name": "rtdetr.yaml",
+      "filePath": "configs/rtdetr.yaml",
+      "summary": "Hyperparameter and model settings for RT-DETR-L, a transformer-based real-time object detector utilized as an accuracy ceiling and architectural contrast in the pipeline.",
+      "tags": [
+        "configuration",
+        "rt-detr",
+        "deep-learning",
+        "model-tuning"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "config:configs/visdrone5.yaml",
+      "type": "config",
+      "name": "visdrone5.yaml",
+      "filePath": "configs/visdrone5.yaml",
+      "summary": "Dataset configuration for VisDrone-DET, defining the root directories and mapping the original 10 classes to 5 coarse classes for simplified model training.",
+      "tags": [
+        "configuration",
+        "dataset",
+        "visdrone",
+        "class-mapping"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "config:configs/yolov8m.yaml",
+      "type": "config",
+      "name": "yolov8m.yaml",
+      "filePath": "configs/yolov8m.yaml",
+      "summary": "Model and training settings for YOLOv8m (medium capacity), serving as the primary sweet-spot detector for the drone avoidance system.",
+      "tags": [
+        "configuration",
+        "yolov8",
+        "deep-learning",
+        "model-tuning"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "config:configs/yolov8n.yaml",
+      "type": "config",
+      "name": "yolov8n.yaml",
+      "filePath": "configs/yolov8n.yaml",
+      "summary": "Model and training settings for YOLOv8n (nano capacity), providing a high-speed baseline and embedded performance floor.",
+      "tags": [
+        "configuration",
+        "yolov8",
+        "deep-learning",
+        "model-tuning"
+      ],
+      "complexity": "simple"
+    }
+  ],
+  "edges": [
+    {
+      "source": "config:configs/rtdetr.yaml",
+      "target": "config:configs/visdrone5.yaml",
+      "type": "depends_on",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "config:configs/yolov8m.yaml",
+      "target": "config:configs/visdrone5.yaml",
+      "type": "depends_on",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "config:configs/yolov8n.yaml",
+      "target": "config:configs/visdrone5.yaml",
+      "type": "depends_on",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "config:configs/rtdetr.yaml",
+      "target": "file:scripts/train.py",
+      "type": "configures",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "config:configs/yolov8m.yaml",
+      "target": "file:scripts/train.py",
+      "type": "configures",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "config:configs/yolov8n.yaml",
+      "target": "file:scripts/train.py",
+      "type": "configures",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "config:configs/visdrone5.yaml",
+      "target": "file:scripts/train.py",
+      "type": "configures",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "document:docs/training_pipeline.md",
+      "target": "config:configs/rtdetr.yaml",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:docs/training_pipeline.md",
+      "target": "config:configs/yolov8m.yaml",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:docs/training_pipeline.md",
+      "target": "config:configs/yolov8n.yaml",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:docs/training_pipeline.md",
+      "target": "config:configs/visdrone5.yaml",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    }
+  ]
+}

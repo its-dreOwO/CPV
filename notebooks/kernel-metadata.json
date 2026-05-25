@@ -1,6 +1,6 @@
 {
   "id": "itsdreowo/cpv-visdrone-train",
-  "title": "CPV VisDrone Training",
+  "title": "CPV VisDrone Train",
   "code_file": "kaggle_train.ipynb",
   "language": "python",
   "kernel_type": "notebook",

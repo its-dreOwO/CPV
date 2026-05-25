@@ -54,6 +54,9 @@ Thumbs.db
 .idea/
 *.swp
 
+# Skills / tooling
+.understand-anything/
+
 # Local docs and artifacts
 PROJECT_EXPLANATION.md
 flake8_results.txt

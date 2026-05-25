@@ -9,7 +9,7 @@
   "accelerator": "nvidiaTeslaT4",
   "enable_tpu": "false",
   "enable_internet": "true",
-  "dataset_sources": ["itsdreowo/cpv-visdrone5"],
+  "dataset_sources": ["itsdreowo/cpv-visdrone5", "itsdreowo/cpv-source"],
   "competition_sources": [],
   "kernel_sources": []
 }

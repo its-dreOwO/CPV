@@ -1,0 +1,24 @@
+# VisDrone-DET dataset — 5 coarse classes
+#
+# Class mapping from VisDrone's original 10:
+#   vehicle  <- car(3), van(4), truck(5), bus(8)
+#   person   <- pedestrian(0), people(1)
+#   static   <- (reserved; no VisDrone source — will come from AirSim)
+#   flying   <- (reserved; no VisDrone source — will come from Bird-vs-Drone)
+#   other    <- bicycle(2), tricycle(6), awning-tricycle(7), motor(9)
+#
+# On Kaggle, override `path` via the train.py --data-root flag or set the
+# VISDRONE_ROOT env var to /kaggle/input/<dataset-slug>.
+
+path: data/processed
+train: train/images
+val: val/images
+test: test/images
+
+nc: 5
+names:
+  0: vehicle
+  1: person
+  2: static
+  3: flying
+  4: other

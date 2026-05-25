@@ -1,0 +1,9 @@
+# YOLOv8n — speed baseline / embedded floor
+# Role: lower bound on the capacity axis; answers "how much does scale help?"
+model: yolov8n.pt
+data: configs/visdrone5.yaml
+imgsz: 640
+batch: 16
+seed: 42
+project: runs
+name: yolov8n

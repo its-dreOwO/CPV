@@ -1,3 +1,7 @@
+# Build backend — filterpy 1.4.5 uses a setuptools API removed in 68+,
+# so pin a modern setuptools ahead of any install.
+setuptools>=70
+
 # Core CV
 opencv-python>=4.9.0
 numpy>=1.26.0

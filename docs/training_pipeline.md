@@ -68,12 +68,16 @@ Land datasets read-only under `data/raw/`:
 
 ```
 data/raw/
-|---- visdrone/      # VisDrone-DET (primary)
-|---- airsim/        # AirSim RGB+depth (sim, depth ground truth)
-|__-- bird-drone/    # Dynamic-obstacle stress set
+|---- VisDrone_Dataset/
+|     |---- VisDrone2019-DET-train/{images,labels}
+|     |---- VisDrone2019-DET-val/{images,labels}
+|     |__-- VisDrone2019-DET-test-dev/{images,labels}
+|---- airsim/        # AirSim RGB+depth — held-out test set (sim-to-real)
+|__-- bird-drone/    # Dynamic-obstacle stress set (optional)
 ```
 
-Download via `kaggle datasets download` or `kagglehub.dataset_download()`.
+Labels are already in YOLO format (10 source classes). Download via
+`kaggle datasets download` or `kagglehub.dataset_download()`.
 
 **Output:** read-only raw trees. Never edited after this point.
 
@@ -82,8 +86,10 @@ Download via `kaggle datasets download` or `kagglehub.dataset_download()`.
 ### Phase 2 - Validate raw data
 
 ```bash
-python scripts/validate_data.py --images data/raw/visdrone/images \
-    --labels data/raw/visdrone/labels --num-classes 10
+python scripts/validate_data.py \
+    --images data/raw/VisDrone_Dataset/VisDrone2019-DET-train/images \
+    --labels data/raw/VisDrone_Dataset/VisDrone2019-DET-train/labels \
+    --num-classes 10
 python scripts/validate_data.py --videos data/raw/airsim/sequences
 ```
 
@@ -189,17 +195,14 @@ Save chosen weights as `models/best.pt`.
 
 ### Phase 8 - Pipeline integration
 
-Subclass `BaseDetector` with the chosen weights:
+`src/detection/yolo_detector.py` already subclasses `BaseDetector` and is
+wired into `main.py` (Kalman tracker + geometric planner downstream). What
+remains for Phase 8 is the *selection* step:
 
-```python
-# src/detection/yolo_detector.py (Phase 8, not yet written)
-class YoloDetector(BaseDetector):
-    def __init__(self, weights: str): ...
-    def detect(self, frame): ...
-```
-
-Wire into `main.py`, test on a held-out video clip, measure **end-to-end FPS**
-(detection + tracking + planning combined - not just detection).
+1. Pick the winning checkpoint from Phase 7 → copy to `models/best.pt`.
+2. Run `python main.py --source <held-out clip> --weights models/best.pt`.
+3. Measure **end-to-end FPS** (detection + tracking + planning) on the
+   target hardware — not just detection.
 
 **Output:** working R4 demo.
 
@@ -229,23 +232,26 @@ Wire into `main.py`, test on a held-out video clip, measure **end-to-end FPS**
 
 ---
 
-## 5. Open questions (need user input before Phase 0)
+## 5. Locked answers to formerly-open questions
 
-1. **GPU availability** - local CUDA card, Colab, or Kaggle Kernels? Determines
-   batch size and whether Phase 6 takes 6 hours or 2 days.
-2. **Exact 5-class mapping from VisDrone's 10 classes** - proposal below, open
-   to revision:
+1. **GPU:** Kaggle Kernels (free T4). Training runs are pushed via the
+   `kaggle` CLI; `--device cuda` applies inside the Kaggle notebook.
+2. **5-class mapping from VisDrone's 10 classes (locked):**
 
    | Coarse class | VisDrone source classes |
    |--------------|-------------------------|
    | `vehicle` | car, van, truck, bus |
-   | `person` | pedestrian, person |
-   | `static` | (none in VisDrone - reserved for AirSim trees/buildings) |
-   | `flying` | (none in VisDrone - reserved for Bird-vs-Drone) |
+   | `person` | pedestrian, people |
+   | `static` | (reserved — no VisDrone source) |
+   | `flying` | (reserved — no VisDrone source) |
    | `other` | bicycle, tricycle, awning-tricycle, motor |
 
-3. **AirSim integration timing** - bring in during Phase 3 (joint training) or
-   keep as a held-out test set (cross-dataset generalization story for R3)?
+   Implemented in `scripts/preprocess.py`; final scheme lives in
+   `configs/visdrone5.yaml`.
+3. **AirSim:** held out as a cross-dataset test set, **not** folded into
+   training. Gives R3 a real generalization finding (sim-to-real gap) and
+   lets the avoidance planner be validated against AirSim's ground-truth
+   depth maps. Only revisit if Phase 6 looks under-fit.
 
 ---
 

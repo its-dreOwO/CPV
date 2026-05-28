@@ -18,7 +18,10 @@ IMAGE_EXTS = {".jpg", ".jpeg", ".png", ".bmp", ".tif", ".tiff"}
 def parse_args():
     parser = argparse.ArgumentParser(description="Drone obstacle avoidance demo")
     parser.add_argument(
-        "--source", type=str, default="0", help="Video file, camera index, or image directory"
+        "--source",
+        type=str,
+        default="0",
+        help="Video file, camera index, or image directory",
     )
     parser.add_argument(
         "--weights", type=str, default="yolov8m.pt", help="Model weights path"

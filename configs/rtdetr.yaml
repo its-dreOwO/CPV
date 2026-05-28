@@ -1,9 +1,13 @@
 # RT-DETR-L — accuracy ceiling / architecture contrast
-# Role: transformer vs CNN comparison for R3; drop batch to 8 if OOM on T4
+# Role: transformer vs CNN comparison for R3; tuned for L4 (24 GB)
 model: rtdetr-l.pt
 data: configs/visdrone5.yaml
 imgsz: 640
-batch: 8
+batch: 4
+workers: 2
+cache: disk
+amp: true
+patience: 30
 seed: 42
 project: runs
 name: rtdetr

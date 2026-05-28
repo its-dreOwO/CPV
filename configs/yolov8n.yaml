@@ -3,7 +3,11 @@
 model: yolov8n.pt
 data: configs/visdrone5.yaml
 imgsz: 640
-batch: 16
+batch: 64
+workers: 8
+cache: disk
+amp: true
+patience: 30
 seed: 42
 project: runs
 name: yolov8n

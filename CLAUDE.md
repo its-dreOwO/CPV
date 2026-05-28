@@ -95,13 +95,13 @@ The lineup is along two controlled axes - capacity (n -> m) and architecture (m 
 - **AirSim is held out as a cross-dataset test set**, not folded into training - gives R3 a real generalization finding (sim-to-real gap) and lets the avoidance planner be validated against AirSim's ground-truth depth maps. Only fold in if Phase 6 looks under-fit.
 - Class scheme: **5 coarse classes** - `vehicle`, `person`, `static`, `flying`, `other` (collapsed from VisDrone's 10)
 - Split: 70/15/15 stratified, **seed = 42** everywhere
-- Image size: 640x640, batch 16 (drop to 8 if RT-DETR OOMs)
+- Image size: 640x640, batch tuned for L4 24 GB (YOLOv8n: 128, YOLOv8m: 64, RT-DETR-L: 20)
 - Epochs: 50 (full), 5 (sanity)
 - Selection rule: highest mAP@0.5 subject to FPS >= 30
 
-**Compute target: Kaggle Kernels (free GPU).** Training runs are pushed to Kaggle via the kaggle-cli - don't assume a local CUDA card. The `--device cuda` flag in the commands above applies inside the Kaggle notebook environment.
+**Compute target: Nvidia L4 (24 GB, $0.80/h).** `--device cuda` applies inside the training environment.
 
-## Pipeline Status (as of 2026-05-25)
+## Pipeline Status (as of 2026-05-28)
 
 | Phase | Status | Notes |
 |-------|--------|-------|
@@ -109,11 +109,21 @@ The lineup is along two controlled axes - capacity (n -> m) and architecture (m 
 | Phase 1 — raw data | ✅ done | `data/raw/VisDrone_Dataset/` (8629 labeled images, YOLO-format) |
 | Phase 2 — validate raw | ✅ done | All three splits PASS; fixed 1 zero-height bbox in train |
 | Phase 3 — preprocess | ✅ done | `scripts/preprocess.py`; `data/processed/` 6040/1294/1295 split |
-| Phase 4 — configs | ✅ done | `configs/visdrone5.yaml`, `yolov8n/m/rtdetr.yaml` |
-| Phase 5 — sanity run | ⬜ next | 5-epoch YOLOv8n on ~500-img subset on Kaggle |
-| Phase 6 — full training | ⬜ | 50 epochs × 3 models on Kaggle T4 |
-| Phase 7 — evaluation | ⬜ | `scripts/evaluate.py`; produce `reports/R3/model_comparison.md` |
-| Phase 8 — integration | ⬜ | Wire best.pt into `main.py` for R4 demo |
+| Phase 4 — configs | ✅ done | `configs/visdrone5.yaml`, `yolov8n/m/rtdetr.yaml`; tuned for L4 24 GB |
+| Phase 5 — sanity run | ✅ done | YOLOv8n 100 epochs on Modal L4; mAP@0.5=47.4% confirmed pipeline healthy |
+| Phase 6 — full training | 🔄 partial | YOLOv8n ✅ (47.4% mAP@0.5), YOLOv8m ✅ (59.2% mAP@0.5), RT-DETR-L ⏸ paused (VRAM constraints at batch=4 on L4 — needs L40S/A100 to run batch=16) |
+| Phase 7 — evaluation | ⬜ next | `scripts/evaluate.py`; produce `reports/R3/model_comparison.md` |
+| Phase 8 — integration | ⬜ | Wire best.pt into `main.py` + AirSim closed-loop demo for R4 |
+
+## Training Results (Phase 6)
+
+| Model | mAP@0.5 | mAP@0.5:0.95 | vehicle | person | other | Inference |
+|-------|---------|--------------|---------|--------|-------|-----------|
+| YOLOv8n | 47.4% | 24.4% | 74.5% | 32.9% | 34.9% | 0.8ms (~1250 FPS) |
+| YOLOv8m | 59.2% | 32.3% | 82.2% | 46.3% | 49.1% | ~5-7ms (~150 FPS) |
+| RT-DETR-L | ⏸ paused | — | — | — | — | — |
+
+Weights stored in Modal volume `cpv-data` under `/runs/<model>/weights/best.pt`. Fetch locally with `modal run modal_train.py::fetch --model <name>`.
 
 ## Conventions
 

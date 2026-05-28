@@ -42,7 +42,7 @@ attributable to the model, not the training loop.
 | Class scheme | 5 coarse classes: `vehicle`, `person`, `static`, `flying`, `other` | Avoidance doesn't need fine-grained taxonomy; reduces class imbalance |
 | Image size | 640 x 640 | YOLO default; balances speed vs small-object recall |
 | Epochs | 50 (full) / 5 (sanity) | Standard for fine-tuning from COCO-pretrained weights |
-| Batch size | 16 default, drop to 8 if RT-DETR OOMs | RT-DETR uses ~1.5x the VRAM of YOLOv8m |
+| Batch size | YOLOv8n: 128, YOLOv8m: 64, RT-DETR-L: 20 | Tuned for L4 24 GB; RT-DETR uses ~1.5x VRAM of YOLOv8m so scales conservatively |
 | Optimizer | SGD (Ultralytics default) | Don't fight the framework |
 | Seed | 42 | Single source of randomness across all runs |
 | Selection criterion | `mAP@0.5 >= X subject to FPS >= 30` | Locks the speed/accuracy tradeoff up front |
@@ -165,7 +165,17 @@ Each run produces:
 - `models/<name>_last.pt`  - final-epoch checkpoint
 - `runs/<name>/`           - TensorBoard logs, training curves, sample predictions
 
-**Time budget per run:** ~2-4 hours on a single T4. RT-DETR is the slowest.
+**Time budget per run:** ~2 hours on L4 (24 GB) for YOLOv8 models. RT-DETR-L requires L40S (48 GB) or A100 (40 GB) to run batch=16 — at batch=4 on L4 it is prohibitively slow (~18 min/epoch).
+
+**Completed results (2026-05-28):**
+
+| Model | Epochs | mAP@0.5 | mAP@0.5:0.95 | vehicle | person | other | Inference | Cost |
+|-------|--------|---------|--------------|---------|--------|-------|-----------|------|
+| YOLOv8n | 100 | 47.4% | 24.4% | 74.5% | 32.9% | 34.9% | 0.8ms | ~$1.45 |
+| YOLOv8m | 100 | 59.2% | 32.3% | 82.2% | 46.3% | 49.1% | ~6ms | ~$3.50 |
+| RT-DETR-L | ⏸ paused | — | — | — | — | — | — | — |
+
+**RT-DETR-L note:** OOMs at batch=20 and batch=10 on L4 (22 GB usable). Runs at batch=4 but ~18 min/epoch makes 100 epochs impractical. Resume on L40S ($2.10/h, 48 GB) with batch=16 — estimated ~4 hours total. Change `gpu="L4"` → `gpu="L40S"` in `modal_train.py` and set `batch: 16` in `configs/rtdetr.yaml`.
 
 ---
 
@@ -234,8 +244,8 @@ remains for Phase 8 is the *selection* step:
 
 ## 5. Locked answers to formerly-open questions
 
-1. **GPU:** Kaggle Kernels (free T4). Training runs are pushed via the
-   `kaggle` CLI; `--device cuda` applies inside the Kaggle notebook.
+1. **GPU:** Nvidia L4 (24 GB, $0.80/h). Batch sizes are tuned to saturate
+   this GPU; `--device cuda` applies inside the training environment.
 2. **5-class mapping from VisDrone's 10 classes (locked):**
 
    | Coarse class | VisDrone source classes |

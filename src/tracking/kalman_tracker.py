@@ -156,6 +156,12 @@ class KalmanTracker(BaseTracker):
         self.frame_count = 0
         self.next_id = 1
 
+    def reset(self):
+        self.trackers = []
+        self.frame_count = 0
+        self.next_id = 1
+        KalmanBoxTracker.count = 0
+
     def update(self, detections: List[Detection]) -> List[Track]:
         self.frame_count += 1
 

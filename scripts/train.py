@@ -4,6 +4,8 @@ Usage
 -----
     python scripts/train.py --config configs/yolov8m.yaml --epochs 50 --device cuda
     python scripts/train.py --config configs/yolov8n.yaml --epochs 5 --device cuda
+    # Resume an interrupted run:
+    python scripts/train.py --config configs/yolov8m.yaml --resume
 """
 
 import argparse
@@ -26,6 +28,17 @@ def parse_args():
         default=None,
         help="Override the dataset path (e.g. /kaggle/input/<slug>)",
     )
+    p.add_argument(
+        "--project",
+        type=str,
+        default=None,
+        help="Override the output project directory (e.g. /vol/runs on Modal)",
+    )
+    p.add_argument(
+        "--resume",
+        action="store_true",
+        help="Resume training from last checkpoint in project/name/weights/last.pt",
+    )
     return p.parse_args()
 
 
@@ -37,6 +50,21 @@ def load_config(path: str) -> dict:
 def main():
     args = parse_args()
     cfg = load_config(args.config)
+
+    if args.project:
+        cfg["project"] = args.project
+
+    if args.resume:
+        last_pt = (
+            Path(cfg.get("project", "runs"))
+            / cfg.get("name", "train")
+            / "weights/last.pt"
+        )
+        if not last_pt.exists():
+            raise FileNotFoundError(f"Cannot resume: {last_pt} not found")
+        print(f"Resuming from {last_pt}")
+        YOLO(str(last_pt)).train(resume=True)
+        return
 
     data_yaml = cfg.pop("data")
     if args.data_root:

@@ -6,13 +6,18 @@ Streamlit app for project showcase:
   2. Training results dashboard (model comparison)
   3. Live demo (upload image/video → inference if weights available)
 
-Run:
-    streamlit run web_app.py
+Run (from repo root):
+    streamlit run prototype/web_app.py
 """
 
 import io
+import sys
 import tempfile
 from pathlib import Path
+
+# Ensure the repo root is on sys.path so `from src.*` imports work
+# regardless of which directory Streamlit uses as CWD.
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import cv2
 import numpy as np
@@ -863,6 +868,12 @@ elif page == "🎯 Live Demo":
                         w_vid = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
                         h_vid = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
 
+                        # Guard: CAP_PROP_FRAME_COUNT may return 0 for
+                        # streamed / short videos, which would crash the
+                        # slider (max_value < min_value).
+                        if total_frames < 10:
+                            total_frames = 10
+
                         st.info(
                             f"📹 Video: {w_vid}×{h_vid} @ {fps:.0f}fps · {total_frames} frames"
                         )
@@ -894,7 +905,10 @@ elif page == "🎯 Live Demo":
                             out_path = tempfile.NamedTemporaryFile(
                                 delete=False, suffix=".mp4"
                             ).name
-                            fourcc = cv2.VideoWriter_fourcc(*"avc1")
+                            # Use mp4v — avc1 (H.264) is unavailable in
+                            # the stock opencv-python wheel and silently
+                            # produces empty files.
+                            fourcc = cv2.VideoWriter_fourcc(*"mp4v")
                             out_writer = cv2.VideoWriter(
                                 out_path, fourcc, fps, (w_vid, h_vid)
                             )

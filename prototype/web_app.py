@@ -250,7 +250,9 @@ def run_inference_on_frame(model, frame: np.ndarray):
         cls = int(box.cls[0])
         name = results.names.get(cls, str(cls))
         detections.append(
-            Detection(bbox=[x1, y1, x2, y2], confidence=conf, class_id=cls, class_name=name)
+            Detection(
+                bbox=[x1, y1, x2, y2], confidence=conf, class_id=cls, class_name=name
+            )
         )
     return detections, results
 
@@ -260,10 +262,10 @@ def draw_detections_on_frame(frame: np.ndarray, detections, avoidance_cmd=None):
     out = frame.copy()
     # Color palette for classes
     colors = [
-        (78, 126, 234),   # vehicle - blue
-        (162, 75, 118),   # person - purple
-        (45, 183, 147),   # static - teal
-        (234, 166, 78),   # flying - orange
+        (78, 126, 234),  # vehicle - blue
+        (162, 75, 118),  # person - purple
+        (45, 183, 147),  # static - teal
+        (234, 166, 78),  # flying - orange
         (150, 150, 180),  # other - grey
     ]
     for d in detections:
@@ -276,16 +278,28 @@ def draw_detections_on_frame(frame: np.ndarray, detections, avoidance_cmd=None):
         (tw, th), _ = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.55, 1)
         cv2.rectangle(out, (x1, y1 - th - 8), (x1 + tw + 4, y1), color, -1)
         cv2.putText(
-            out, label, (x1 + 2, y1 - 4),
-            cv2.FONT_HERSHEY_SIMPLEX, 0.55, (255, 255, 255), 1, cv2.LINE_AA,
+            out,
+            label,
+            (x1 + 2, y1 - 4),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            0.55,
+            (255, 255, 255),
+            1,
+            cv2.LINE_AA,
         )
 
     if avoidance_cmd:
         yaw, alt = avoidance_cmd
         cmd_text = f"CMD -> Yaw: {yaw:+.1f}  Alt: {alt:+.1f}"
         cv2.putText(
-            out, cmd_text, (20, 45),
-            cv2.FONT_HERSHEY_SIMPLEX, 1.0, (0, 100, 255), 2, cv2.LINE_AA,
+            out,
+            cmd_text,
+            (20, 45),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            1.0,
+            (0, 100, 255),
+            2,
+            cv2.LINE_AA,
         )
     return out
 
@@ -371,7 +385,10 @@ if page == "🏠 Overview":
     st.markdown("")
 
     # Architecture diagram
-    st.markdown('<div class="section-header">🔗 Pipeline Architecture</div>', unsafe_allow_html=True)
+    st.markdown(
+        '<div class="section-header">🔗 Pipeline Architecture</div>',
+        unsafe_allow_html=True,
+    )
 
     col_left, col_right = st.columns([3, 2])
 
@@ -434,7 +451,9 @@ if page == "🏠 Overview":
         st.dataframe(class_data, use_container_width=True, hide_index=True)
 
     # Tech stack
-    st.markdown('<div class="section-header">🛠 Technology Stack</div>', unsafe_allow_html=True)
+    st.markdown(
+        '<div class="section-header">🛠 Technology Stack</div>', unsafe_allow_html=True
+    )
 
     c1, c2, c3, c4 = st.columns(4)
     with c1:
@@ -522,7 +541,9 @@ elif page == "📊 Training Results":
     st.markdown("")
 
     # Model comparison table
-    st.markdown('<div class="section-header">📊 Model Comparison</div>', unsafe_allow_html=True)
+    st.markdown(
+        '<div class="section-header">📊 Model Comparison</div>', unsafe_allow_html=True
+    )
 
     df = pd.DataFrame(TRAINING_RESULTS)
     # Style the dataframe
@@ -540,7 +561,11 @@ elif page == "📊 Training Results":
             }
         ).apply(
             lambda row: [
-                "background-color: rgba(102,126,234,0.1)" if row["Status"] == "✅ Done" else ""
+                (
+                    "background-color: rgba(102,126,234,0.1)"
+                    if row["Status"] == "✅ Done"
+                    else ""
+                )
             ]
             * len(row),
             axis=1,
@@ -552,7 +577,9 @@ elif page == "📊 Training Results":
     st.markdown("")
 
     # Charts
-    st.markdown('<div class="section-header">📈 Detailed Analysis</div>', unsafe_allow_html=True)
+    st.markdown(
+        '<div class="section-header">📈 Detailed Analysis</div>', unsafe_allow_html=True
+    )
 
     tab1, tab2, tab3 = st.tabs(["mAP Comparison", "Per-Class AP", "Speed vs Accuracy"])
 
@@ -566,13 +593,11 @@ elif page == "📊 Training Results":
         )
         st.bar_chart(chart_data.set_index("Model"), color=["#667eea", "#764ba2"])
 
-        st.markdown(
-            """
+        st.markdown("""
         > **Key Finding:** Scaling from YOLOv8n (3.2M params) to YOLOv8m (25.9M params) yields
         > a **+11.8 pp** gain in mAP@0.5 — demonstrating that model capacity significantly
         > helps on the VisDrone drone-perspective data with its small, dense objects.
-        """
-        )
+        """)
 
     with tab2:
         per_class = pd.DataFrame(
@@ -584,14 +609,12 @@ elif page == "📊 Training Results":
         )
         st.bar_chart(per_class.set_index("Class"), color=["#667eea", "#764ba2"])
 
-        st.markdown(
-            """
+        st.markdown("""
         > **Per-class insights:**
         > - **Vehicle** is the easiest class (74-82% AP) — large, frequent, and distinctive
         > - **Person** benefits most from scale (+13.4 pp) — small objects need deeper features
         > - **Other** (bicycle, tricycle, motor) also improves significantly (+14.2 pp)
-        """
-        )
+        """)
 
     with tab3:
         speed_data = pd.DataFrame(
@@ -610,19 +633,20 @@ elif page == "📊 Training Results":
             color="Model",
         )
 
-        st.markdown(
-            """
+        st.markdown("""
         > **Speed vs Accuracy tradeoff:**
         > - YOLOv8n is extremely fast but sacrifices accuracy
         > - YOLOv8m hits the sweet spot for our FPS≥30 requirement
         > - RT-DETR-L (estimated) pushes accuracy further but at ~30 FPS limit
         >
         > **Selection rule:** highest mAP@0.5 subject to FPS ≥ 30 → **YOLOv8m wins**
-        """
-        )
+        """)
 
     # Training details
-    st.markdown('<div class="section-header">⚙️ Training Configuration</div>', unsafe_allow_html=True)
+    st.markdown(
+        '<div class="section-header">⚙️ Training Configuration</div>',
+        unsafe_allow_html=True,
+    )
 
     c1, c2 = st.columns(2)
     with c1:
@@ -693,7 +717,9 @@ elif page == "🎯 Live Demo":
             "the default `yolov8m.pt` pretrained model."
         )
 
-        use_default = st.checkbox("🔄 Use default pretrained YOLOv8m (COCO, 80 classes)", value=True)
+        use_default = st.checkbox(
+            "🔄 Use default pretrained YOLOv8m (COCO, 80 classes)", value=True
+        )
         if use_default:
             weights_choice = "yolov8m.pt"
         else:
@@ -730,7 +756,9 @@ elif page == "🎯 Live Demo":
 
                 if model is not None:
                     # Read image
-                    file_bytes = np.asarray(bytearray(uploaded_img.read()), dtype=np.uint8)
+                    file_bytes = np.asarray(
+                        bytearray(uploaded_img.read()), dtype=np.uint8
+                    )
                     img = cv2.imdecode(file_bytes, cv2.IMREAD_COLOR)
 
                     if img is not None:
@@ -751,7 +779,9 @@ elif page == "🎯 Live Demo":
                             avoidance_cmd = None
 
                         # Draw results
-                        annotated = draw_detections_on_frame(img, detections, avoidance_cmd)
+                        annotated = draw_detections_on_frame(
+                            img, detections, avoidance_cmd
+                        )
                         annotated_rgb = cv2.cvtColor(annotated, cv2.COLOR_BGR2RGB)
 
                         # Display
@@ -778,7 +808,9 @@ elif page == "🎯 Live Demo":
                                 st.metric("Yaw Command", "N/A")
                         with sc3:
                             if avoidance_cmd:
-                                st.metric("Altitude Command", f"{avoidance_cmd[1]:+.1f}")
+                                st.metric(
+                                    "Altitude Command", f"{avoidance_cmd[1]:+.1f}"
+                                )
                             else:
                                 st.metric("Altitude Command", "N/A")
 
@@ -795,7 +827,9 @@ elif page == "🎯 Live Demo":
                                         for d in detections
                                     ]
                                 )
-                                st.dataframe(det_data, use_container_width=True, hide_index=True)
+                                st.dataframe(
+                                    det_data, use_container_width=True, hide_index=True
+                                )
 
     with upload_tab2:
         uploaded_vid = st.file_uploader(
@@ -844,7 +878,9 @@ elif page == "🎯 Live Demo":
                         if st.button("▶️ Run Detection", type="primary"):
                             try:
                                 from src.tracking.kalman_tracker import KalmanTracker
-                                from src.avoidance.geometric_planner import GeometricPlanner
+                                from src.avoidance.geometric_planner import (
+                                    GeometricPlanner,
+                                )
 
                                 tracker_v = KalmanTracker()
                                 planner_v = GeometricPlanner(
@@ -915,7 +951,12 @@ elif page == "📋 Pipeline Status":
     # Status overview
     phases = [
         ("Phase 0 — Environment", "✅", "done", "venv + requirements.txt configured"),
-        ("Phase 1 — Raw Data", "✅", "done", "VisDrone-DET: 8,629 labeled images (YOLO-format)"),
+        (
+            "Phase 1 — Raw Data",
+            "✅",
+            "done",
+            "VisDrone-DET: 8,629 labeled images (YOLO-format)",
+        ),
         (
             "Phase 2 — Validate Raw",
             "✅",
@@ -946,7 +987,12 @@ elif page == "📋 Pipeline Status":
             "progress",
             "YOLOv8n ✅ (47.4%) · YOLOv8m ✅ (59.2%) · RT-DETR-L ⏸ paused (VRAM constraints)",
         ),
-        ("Phase 7 — Evaluation", "⬜", "pending", "scripts/evaluate.py ready; awaiting Phase 6 completion"),
+        (
+            "Phase 7 — Evaluation",
+            "⬜",
+            "pending",
+            "scripts/evaluate.py ready; awaiting Phase 6 completion",
+        ),
         (
             "Phase 8 — Integration",
             "⬜",
@@ -969,7 +1015,10 @@ elif page == "📋 Pipeline Status":
 
     # R-Round mapping
     st.markdown("")
-    st.markdown('<div class="section-header">📅 Submission Round Mapping</div>', unsafe_allow_html=True)
+    st.markdown(
+        '<div class="section-header">📅 Submission Round Mapping</div>',
+        unsafe_allow_html=True,
+    )
 
     round_data = pd.DataFrame(
         {
@@ -986,7 +1035,9 @@ elif page == "📋 Pipeline Status":
     st.dataframe(round_data, use_container_width=True, hide_index=True)
 
     # Open issues
-    st.markdown('<div class="section-header">⚠️ Open Issues</div>', unsafe_allow_html=True)
+    st.markdown(
+        '<div class="section-header">⚠️ Open Issues</div>', unsafe_allow_html=True
+    )
 
     st.markdown(
         """

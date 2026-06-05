@@ -20,6 +20,9 @@ python main.py --source 0
 python main.py --source path/to/video.mp4
 python main.py --source path/to/video.mp4 --weights models/best.pt --device cuda
 
+# Streamlit showcase prototype (run from repo root so `src.*` imports resolve)
+streamlit run prototype/web_app.py
+
 # Phase 2 — validate raw data (run from repo root; labels are already YOLO-format)
 python scripts/validate_data.py \
     --images data/raw/VisDrone_Dataset/VisDrone2019-DET-train/images \
@@ -75,7 +78,7 @@ frame (np.ndarray)
 - `tracking/kalman_tracker.py` — `KalmanTracker` uses per-object Kalman filters (7-state: cx, cy, area, aspect ratio + velocities) with Hungarian/IoU data association (SORT-style)
 - `avoidance/geometric_planner.py` — `GeometricPlanner` projects each track's future position by `time_horizon` seconds using its velocity, applies a repulsive force if within `safe_distance` pixels of frame center, outputs clamped `(yaw_delta, altitude_delta)`
 
-`main.py` wires these together for the live demo; it reads actual frame dimensions at startup and passes them to the planner. `scripts/train.py` loads a model config YAML and calls `ultralytics.YOLO.train()` — supports `--data-root` to override the dataset path on Kaggle. `scripts/preprocess.py` does the Phase 3 class remap (10 → 5 classes) and 70/15/15 stratified split, writing to `data/processed/`. `scripts/validate_data.py` runs pre-training integrity checks (image readability, YOLO label format, image/label pairing, video integrity); reusable helpers live in `src/utils/data_validation.py`.
+`main.py` wires these together for the live demo; it reads actual frame dimensions at startup and passes them to the planner. `prototype/web_app.py` is a Streamlit showcase app (overview, training-results dashboard, image/video live-demo) that reuses the same `src.*` pipeline classes; it inserts the repo root onto `sys.path` so `from src.*` resolves, and reads its theme from the repo-root `.streamlit/config.toml` — so always launch it from the repo root (`streamlit run prototype/web_app.py`). `scripts/train.py` loads a model config YAML and calls `ultralytics.YOLO.train()` — supports `--data-root` to override the dataset path on Kaggle. `scripts/preprocess.py` does the Phase 3 class remap (10 → 5 classes) and 70/15/15 stratified split, writing to `data/processed/`. `scripts/validate_data.py` runs pre-training integrity checks (image readability, YOLO label format, image/label pairing, video integrity); reusable helpers live in `src/utils/data_validation.py`.
 
 **Import style:** modules import from `src.*` (absolute), so always run pytest/scripts from the repo root.
 
@@ -132,3 +135,4 @@ Weights stored in Modal volume `cpv-data` under `/runs/<model>/weights/best.pt`.
 - **Course materials are gitignored** - `CPV_notes/`, `*.pptx`, `*.xlsx` stay local only, **except** the project rubric at `docs/SU26_AI2013_CPV301.xlsx` (whitelisted via `!docs/*.xlsx`).
 - **Reports directory** (`reports/R1`-`R4`) is for final PDFs only; drafts and working files belong elsewhere.
 - **Design docs** live in `docs/` (e.g., `docs/training_pipeline.md`). Update the doc when the design changes - it's the source of truth that R-round reports reference.
+- **`prototype/` holds the Streamlit showcase app** and is excluded from `flake8` in `setup.cfg` (the `sys.path` shim trips E402), so it is not lint-gated by CI - keep it formatted with `black` manually.

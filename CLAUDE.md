@@ -16,7 +16,7 @@ Submissions are organized into four rounds (`reports/R1`-`R4`), each requiring s
 - Design spec: `docs/superpowers/specs/2026-06-22-vehicle-avoidance-pivot-design.md`
 - Implementation plans: `docs/superpowers/plans/` (Plan 1 = risk-assessor code pivot, Plan 2 = BDD100K data pipeline, Plan 3 = training + eval + docs rewrite)
 
-> **Note:** `docs/training_pipeline.md` still describes the OLD drone pipeline and is rewritten in Plan 3 — treat it as stale until then. Active work is on branch `pivot/vehicle-avoidance`.
+> **Note:** the old drone `docs/training_pipeline.md` was removed; the design spec under `docs/superpowers/specs/` is the source of truth. A vehicle training pipeline doc is authored in Plan 3 when training lands. Active work is on branch `pivot/vehicle-avoidance`.
 
 ## Commands
 

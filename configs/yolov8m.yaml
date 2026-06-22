@@ -1,7 +1,7 @@
 # YOLOv8m — primary demo model / sweet spot
 # Role: primary R4 demo model; ships in main.py after Phase 7 selection
 model: yolov8m.pt
-data: configs/visdrone5.yaml
+data: configs/bdd100k.yaml
 imgsz: 640
 batch: 32
 workers: 8

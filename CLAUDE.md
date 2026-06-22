@@ -4,47 +4,47 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Context
 
-This is a **CPV301 (Computer Vision) course project** at FPT University implementing **RT-DR-003: Obstacle Avoidance for Drones**. The research question is *"How can drones avoid dynamic obstacles during flight?"* and the expected output is a working prototype.
+This is a **CPV301 (Computer Vision) course project** at FPT University. As of **2026-06-22 the project pivoted** away from drone obstacle avoidance to a road-vehicle research question:
 
-Submissions are organized into four rounds (`reports/R1`-`R4`), each requiring slides + report (PDF, English) plus a public GitHub link. R2 onward must include source code; R4 is the final demo. The full rubric is committed at `docs/SU26_AI2013_CPV301.xlsx`. The locked training pipeline design (model lineup, decisions, R-round mapping) is in `docs/training_pipeline.md` - read it before changing anything related to training.
+> **"How can vehicles avoid pedestrians and vehicles?"**
+
+The deliverable is a **forward-facing dashcam perception + risk-advisory system** (ADAS Forward-Collision-Warning style): it detects and tracks road obstacles and tags each tracked object **SAFE / CAUTION / DANGER**. It is perception + risk reasoning, not a vehicle-control loop (no steering/braking output) — honest about running on a single monocular camera.
+
+Submissions are organized into four rounds (`reports/R1`-`R4`), each requiring slides + report (PDF, English) plus a public GitHub link. R2 onward must include source code; R4 is the final demo. The full rubric is committed at `docs/SU26_AI2013_CPV301.xlsx`.
+
+**Source of truth for the pivot:**
+- Design spec: `docs/superpowers/specs/2026-06-22-vehicle-avoidance-pivot-design.md`
+- Implementation plans: `docs/superpowers/plans/` (Plan 1 = risk-assessor code pivot, Plan 2 = BDD100K data pipeline, Plan 3 = training + eval + docs rewrite)
+
+> **Note:** `docs/training_pipeline.md` still describes the OLD drone pipeline and is rewritten in Plan 3 — treat it as stale until then. Active work is on branch `pivot/vehicle-avoidance`.
 
 ## Commands
 
 ```bash
 # Setup
-python -m venv .venv && source .venv/bin/activate
+python -m venv .venv && source .venv/bin/activate   # Fish: source .venv/bin/activate.fish
 pip install -r requirements.txt
 
-# Run demo pipeline (webcam or video file)
+# Run demo pipeline (webcam or dashcam video) — shows ego-path + risk overlay
 python main.py --source 0
-python main.py --source path/to/video.mp4
-python main.py --source path/to/video.mp4 --weights models/best.pt --device cuda
+python main.py --source path/to/dashcam.mp4
+python main.py --source path/to/dashcam.mp4 --weights models/best.pt --device cuda
 
 # Streamlit showcase prototype (run from repo root so `src.*` imports resolve)
 streamlit run prototype/web_app.py
 
-# Phase 2 — validate raw data (run from repo root; labels are already YOLO-format)
-python scripts/validate_data.py \
-    --images data/raw/VisDrone_Dataset/VisDrone2019-DET-train/images \
-    --labels data/raw/VisDrone_Dataset/VisDrone2019-DET-train/labels \
-    --num-classes 10
-python scripts/validate_data.py --videos data/raw/airsim/sequences
+# Data pipeline (BDD100K) — scripts are being adapted from VisDrone in Plan 2
+python scripts/validate_data.py --images data/raw/bdd100k/images --labels data/raw/bdd100k/labels --num-classes 3
+python scripts/preprocess.py     # BDD100K JSON -> YOLO, 10 -> 3 class remap, stratified split -> data/processed/
 
-# Phase 3 — remap to 5 coarse classes + 70/15/15 stratified split -> data/processed/
-python scripts/preprocess.py
-python scripts/preprocess.py --raw-root data/raw/VisDrone_Dataset --seed 42
-
-# Train / evaluate (Phase 5 sanity: --epochs 5; Phase 6 full: --epochs 50)
+# Train / evaluate (sanity: --epochs 5; full: --epochs 50)
 python scripts/train.py --config configs/yolov8m.yaml --epochs 50 --device cuda
-# On Kaggle, override the dataset path:
-python scripts/train.py --config configs/yolov8m.yaml --epochs 50 --device cuda \
-    --data-root /kaggle/input/<dataset-slug>
 python scripts/evaluate.py --weights models/best.pt --data data/processed/test
 
 # Tests (pytest with coverage on src/ is configured in setup.cfg)
 pytest                                    # all tests
-pytest tests/test_detection.py            # single file
-pytest tests/test_detection.py::test_detection_fields  # single test
+pytest tests/test_risk.py                 # single file
+pytest tests/test_risk.py::test_off_path_object_is_safe  # single test
 pytest -k "tracking"                      # by keyword
 
 # Lint / format (matches CI exactly)
@@ -53,86 +53,81 @@ flake8 .
 black .                                   # apply formatting
 ```
 
-CI (`.github/workflows/lint.yml`) runs `black --check .` then `flake8 .` on every push and PR. Both must pass.
+CI (`.github/workflows/ci.yml`) runs `black --check .` then `flake8 .` on every push and PR. Both must pass.
 
 ## Architecture
 
-The pipeline is a three-stage CV chain: **detection -> tracking -> avoidance planning**, with each stage defined as a base class that concrete implementations subclass. This separation lets the team swap models (YOLO variants, different trackers, planners) without changing downstream code - important because R3 requires comparing >=3 different models.
+The pipeline is a three-stage CV chain: **detection -> tracking -> risk assessment**, with each stage defined as a base class that concrete implementations subclass. This separation lets the team swap models (YOLO variants, different trackers) without changing downstream code — important because R3 compares >=3 different detectors.
 
 **Data flow:**
 ```
-frame (np.ndarray)
-  -> BaseDetector.detect()    -> List[Detection]   (bbox, confidence, class_id)
-  -> BaseTracker.update()     -> List[Track]       (track_id, bbox, velocity, age)
-  -> BaseAvoidancePlanner.plan() -> (yaw_delta, altitude_delta)
+frame (dashcam, monocular np.ndarray)
+  -> BaseDetector.detect()        -> List[Detection]   (bbox, confidence, class_id: vehicle/person/two_wheeler)
+  -> BaseTracker.update()         -> List[Track]       (track_id, bbox, velocity, scale_velocity, age)
+  -> BaseRiskAssessor.assess()    -> List[RiskedTrack] (each tagged SAFE/CAUTION/DANGER)
 ```
 
 **Key contracts** (in `src/`):
-- `detection/detector.py` - `Detection` dataclass + `BaseDetector.detect(frame) -> List[Detection]`
-- `tracking/tracker.py` - `Track` dataclass (carries velocity for dynamic obstacle prediction) + `BaseTracker.update(detections) -> List[Track]`
-- `avoidance/planner.py` - `BaseAvoidancePlanner.plan(tracks) -> (yaw_delta, altitude_delta)`
-- `utils/visualizer.py` - rendering helpers (decoupled from pipeline logic)
+- `detection/detector.py` — `Detection` dataclass + `BaseDetector.detect(frame) -> List[Detection]`
+- `tracking/tracker.py` — `Track` dataclass (carries `velocity` and `scale_velocity` — bbox-area growth rate — for the closing/TTC proxy) + `BaseTracker.update(detections) -> List[Track]`
+- `risk/assessor.py` — `RiskedTrack` dataclass + `RiskLevel` constants + `BaseRiskAssessor.assess(tracks, frame_shape) -> List[RiskedTrack]`
+- `utils/visualizer.py` — rendering helpers (decoupled from pipeline logic)
 
-**Concrete implementations** (all three pipeline stages are now implemented):
+**Concrete implementations:**
 - `detection/yolo_detector.py` — `YoloDetector(model_path)` wraps Ultralytics YOLO; returns `List[Detection]` in original-frame pixel coordinates
-- `tracking/kalman_tracker.py` — `KalmanTracker` uses per-object Kalman filters (7-state: cx, cy, area, aspect ratio + velocities) with Hungarian/IoU data association (SORT-style)
-- `avoidance/geometric_planner.py` — `GeometricPlanner` projects each track's future position by `time_horizon` seconds using its velocity, applies a repulsive force if within `safe_distance` pixels of frame center, outputs clamped `(yaw_delta, altitude_delta)`
+- `tracking/kalman_tracker.py` — `KalmanTracker` uses per-object Kalman filters (7-state) with Hungarian/IoU data association (SORT-style); exposes area velocity as `Track.scale_velocity`
+- `risk/zone_assessor.py` — `RiskZoneAssessor` (Approach A): projects an **ego-path trapezoid** (narrow at the horizon, wide at the frame bottom); an object is **in-path** if its bbox bottom-center falls inside it, and **closing** if its bbox area is large or growing (`scale_velocity`). Tags SAFE (off-path) / CAUTION (in-path, stable) / DANGER (in-path, large or fast-growing).
 
-`main.py` wires these together for the live demo; it reads actual frame dimensions at startup and passes them to the planner. `prototype/web_app.py` is a Streamlit showcase app (overview, training-results dashboard, image/video live-demo) that reuses the same `src.*` pipeline classes; it inserts the repo root onto `sys.path` so `from src.*` resolves, and reads its theme from the repo-root `.streamlit/config.toml` — so always launch it from the repo root (`streamlit run prototype/web_app.py`). `scripts/train.py` loads a model config YAML and calls `ultralytics.YOLO.train()` — supports `--data-root` to override the dataset path on Kaggle. `scripts/preprocess.py` does the Phase 3 class remap (10 → 5 classes) and 70/15/15 stratified split, writing to `data/processed/`. `scripts/validate_data.py` runs pre-training integrity checks (image readability, YOLO label format, image/label pairing, video integrity); reusable helpers live in `src/utils/data_validation.py`.
+`main.py` wires these together for the live demo and overlays the ego-path region + color-coded risk boxes. `prototype/web_app.py` is a Streamlit showcase app reusing the same `src.*` pipeline classes; it inserts the repo root onto `sys.path` so `from src.*` resolves and reads its theme from the repo-root `.streamlit/config.toml` — always launch it from the repo root. `scripts/train.py` loads a model config YAML and calls `ultralytics.YOLO.train()`. `scripts/preprocess.py` does the class remap + stratified split; `scripts/validate_data.py` runs pre-training integrity checks (helpers in `src/utils/data_validation.py`).
+
+> The `src/risk/` package replaces the former `src/avoidance/` (the word "avoidance" implied a control loop). `scripts/preprocess.py`, `validate_data.py`, `train.py`, `evaluate.py`, and `modal_train.py` are still VisDrone/drone-shaped and are adapted for BDD100K in Plans 2–3.
 
 **Import style:** modules import from `src.*` (absolute), so always run pytest/scripts from the repo root.
 
-## Training Plan (locked - see `docs/training_pipeline.md`)
+## Datasets & training plan
 
-Only the **detector** is trained. Tracker = Kalman + Hungarian (rule-based). Planner = geometric (rule-based).
+Only the **detector** is trained. Tracker = Kalman + Hungarian (rule-based). Risk assessor = geometric ego-path heuristic (rule-based).
 
-**Model lineup for the R3 >=3-model comparison:**
-- **YOLOv8n** - speed baseline / embedded floor
-- **YOLOv8m** - primary demo model (the one that ships in R4)
-- **RT-DETR-L** - accuracy ceiling / architecture contrast (transformer vs CNN)
+**Datasets:**
+- **Primary — BDD100K** (dashcam detection). Native 10 classes collapsed to **3 coarse classes**: `vehicle` (car/truck/bus/train), `person` (pedestrian/rider), `two_wheeler` (bicycle/motorcycle). Traffic light/sign dropped.
+- **Held-out — KITTI** (cross-dataset). Used in R3 for (a) zero-shot generalization (domain gap) and (b) **validating the risk-zone heuristic against ground-truth 3D/depth** distances.
+- Both gitignored under `data/raw/` and `data/processed/`.
 
-The lineup is along two controlled axes - capacity (n -> m) and architecture (m -> RT-DETR-L) - so any performance gap is attributable to the model, not the training loop. All three use the same Ultralytics API.
+**Model lineup for the R3 >=3-model comparison (kept):**
+- **YOLOv8n** — speed baseline / embedded floor
+- **YOLOv8m** — primary demo model (ships in R4)
+- **RT-DETR-L** — accuracy ceiling / architecture contrast (transformer vs CNN)
 
-**Locked decisions** (full table in `docs/training_pipeline.md`):
-- Primary dataset: **VisDrone-DET** — raw data lives at `data/raw/VisDrone_Dataset/` with YOLO-format labels (10 original classes); processed 5-class split at `data/processed/` (both gitignored)
-- **AirSim is held out as a cross-dataset test set**, not folded into training - gives R3 a real generalization finding (sim-to-real gap) and lets the avoidance planner be validated against AirSim's ground-truth depth maps. Only fold in if Phase 6 looks under-fit.
-- Class scheme: **5 coarse classes** - `vehicle`, `person`, `static`, `flying`, `other` (collapsed from VisDrone's 10)
-- Split: 70/15/15 stratified, **seed = 42** everywhere
-- Image size: 640x640, batch tuned for L4 24 GB (YOLOv8n: 128, YOLOv8m: 64, RT-DETR-L: 20)
-- Epochs: 50 (full), 5 (sanity)
-- Selection rule: highest mAP@0.5 subject to FPS >= 30
+Two controlled axes — capacity (n -> m) and architecture (m -> RT-DETR-L) — so any gap is attributable to the model, not the training loop. All use the same Ultralytics API.
 
-**Compute target: Nvidia L4 (24 GB, $0.80/h).** `--device cuda` applies inside the training environment.
+**Locked decisions:** image size 640x640, epochs 50 (full) / 5 (sanity), seed = 42 everywhere, 70/15/15 stratified split, selection rule **highest mAP@0.5 subject to FPS >= 30**. Compute target: Nvidia L4 (24 GB); RT-DETR-L needs L40S/A100 for batch=16.
 
-## Pipeline Status (as of 2026-05-28)
+## Pipeline status (as of 2026-06-22)
 
-| Phase | Status | Notes |
-|-------|--------|-------|
-| Phase 0 — env | ✅ done | venv + requirements.txt |
-| Phase 1 — raw data | ✅ done | `data/raw/VisDrone_Dataset/` (8629 labeled images, YOLO-format) |
-| Phase 2 — validate raw | ✅ done | All three splits PASS; fixed 1 zero-height bbox in train |
-| Phase 3 — preprocess | ✅ done | `scripts/preprocess.py`; `data/processed/` 6040/1294/1295 split |
-| Phase 4 — configs | ✅ done | `configs/visdrone5.yaml`, `yolov8n/m/rtdetr.yaml`; tuned for L4 24 GB |
-| Phase 5 — sanity run | ✅ done | YOLOv8n 100 epochs on Modal L4; mAP@0.5=47.4% confirmed pipeline healthy |
-| Phase 6 — full training | 🔄 partial | YOLOv8n ✅ (47.4% mAP@0.5), YOLOv8m ✅ (59.2% mAP@0.5), RT-DETR-L ⏸ paused (VRAM constraints at batch=4 on L4 — needs L40S/A100 to run batch=16) |
-| Phase 7 — evaluation | ⬜ next | `scripts/evaluate.py`; produce `reports/R3/model_comparison.md` |
-| Phase 8 — integration | ⬜ | Wire best.pt into `main.py` + AirSim closed-loop demo for R4 |
+The pivot is mid-implementation. Old drone training results (VisDrone) are **superseded** and the VisDrone data/weights were removed in the cleanup.
 
-## Training Results (Phase 6)
+| Stage | Status |
+|-------|--------|
+| Cleanup (drone artifacts, git gc) | ✅ done |
+| Design spec | ✅ approved + committed |
+| Plan 1 — risk-assessor code pivot (`src/risk/`) | 🔄 executing (TDD, no dataset/GPU needed) |
+| Plan 2 — BDD100K data pipeline (download, JSON→YOLO, 3-class remap, KITTI prep) | ⬜ next |
+| Plan 3 — training (3 models on BDD100K) + KITTI eval + docs/Streamlit rewrite | ⬜ |
 
-| Model | mAP@0.5 | mAP@0.5:0.95 | vehicle | person | other | Inference |
-|-------|---------|--------------|---------|--------|-------|-----------|
-| YOLOv8n | 47.4% | 24.4% | 74.5% | 32.9% | 34.9% | 0.8ms (~1250 FPS) |
-| YOLOv8m | 59.2% | 32.3% | 82.2% | 46.3% | 49.1% | ~5-7ms (~150 FPS) |
-| RT-DETR-L | ⏸ paused | — | — | — | — | — |
+## R-round mapping
 
-Weights stored in Modal volume `cpv-data` under `/runs/<model>/weights/best.pt`. Fetch locally with `modal run modal_train.py::fetch --model <name>`.
+| Round | What ships |
+|-------|-----------|
+| **R1** | New problem statement + design + BDD100K data-validation report |
+| **R2** | Preprocess + YOLOv8n trained on BDD100K + initial risk-overlay demo |
+| **R3** | 3-model comparison + KITTI cross-dataset generalization + risk-zone validation + day/night & weather robustness |
+| **R4** | Best model wired into live dashcam demo + end-to-end FPS + Streamlit showcase |
 
 ## Conventions
 
 - **Line length: 88** (Black default, matched in `setup.cfg` flake8 config with `E203,W503` ignored for Black compatibility).
-- **Data and weights are gitignored** - `data/raw/`, `data/processed/`, and `models/*.pt|*.pth|*.onnx` never get committed. Only `data/samples/` is intended for tracked tiny test fixtures.
-- **Course materials are gitignored** - `CPV_notes/`, `*.pptx`, `*.xlsx` stay local only, **except** the project rubric at `docs/SU26_AI2013_CPV301.xlsx` (whitelisted via `!docs/*.xlsx`).
+- **Data and weights are gitignored** — `data/raw/`, `data/processed/`, and `models/*.pt|*.pth|*.onnx` never get committed. Only `data/samples/` is intended for tracked tiny test fixtures.
+- **Course materials are gitignored** — `CPV_notes/`, `*.pptx`, `*.xlsx` stay local only, **except** the project rubric at `docs/SU26_AI2013_CPV301.xlsx` (whitelisted via `!docs/*.xlsx`).
 - **Reports directory** (`reports/R1`-`R4`) is for final PDFs only; drafts and working files belong elsewhere.
-- **Design docs** live in `docs/` (e.g., `docs/training_pipeline.md`). Update the doc when the design changes - it's the source of truth that R-round reports reference.
-- **`prototype/` holds the Streamlit showcase app** and is excluded from `flake8` in `setup.cfg` (the `sys.path` shim trips E402), so it is not lint-gated by CI - keep it formatted with `black` manually.
+- **Design docs and plans** live in `docs/` (`docs/superpowers/specs/`, `docs/superpowers/plans/`) — the source of truth that R-round reports reference. Update them when the design changes.
+- **`prototype/` holds the Streamlit showcase app** and is excluded from `flake8` in `setup.cfg` (the `sys.path` shim trips E402), so it is not lint-gated by CI — keep it formatted with `black` manually.

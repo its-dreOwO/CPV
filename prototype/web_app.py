@@ -293,9 +293,9 @@ def draw_detections_on_frame(frame: np.ndarray, detections, avoidance_cmd=None):
             cv2.LINE_AA,
         )
 
-    if avoidance_cmd:
-        yaw, alt = avoidance_cmd
-        cmd_text = f"CMD -> Yaw: {yaw:+.1f}  Alt: {alt:+.1f}"
+    if avoidance_cmd and isinstance(avoidance_cmd, list) and avoidance_cmd:
+        danger_n = sum(1 for r in avoidance_cmd if getattr(r, "risk", None) == "DANGER")
+        cmd_text = f"Risk tracks: {len(avoidance_cmd)}  DANGER: {danger_n}"
         cv2.putText(
             out,
             cmd_text,
@@ -773,13 +773,14 @@ elif page == "🎯 Live Demo":
                         # Try running full pipeline
                         try:
                             from src.tracking.kalman_tracker import KalmanTracker
-                            from src.avoidance.geometric_planner import GeometricPlanner
+                            from src.risk.zone_assessor import RiskZoneAssessor
 
                             h, w = img.shape[:2]
                             tracker = KalmanTracker(min_hits=1)
-                            planner = GeometricPlanner(frame_width=w, frame_height=h)
+                            assessor = RiskZoneAssessor()
                             tracks = tracker.update(detections)
-                            avoidance_cmd = planner.plan(tracks)
+                            risked = assessor.assess(tracks, frame_shape=(h, w))
+                            avoidance_cmd = risked
                         except Exception:
                             avoidance_cmd = None
 
@@ -807,17 +808,18 @@ elif page == "🎯 Live Demo":
                         with sc1:
                             st.metric("Objects Detected", len(detections))
                         with sc2:
-                            if avoidance_cmd:
-                                st.metric("Yaw Command", f"{avoidance_cmd[0]:+.1f}°")
-                            else:
-                                st.metric("Yaw Command", "N/A")
+                            n_tracks = len(avoidance_cmd) if avoidance_cmd else 0
+                            st.metric("Tracks", n_tracks)
                         with sc3:
                             if avoidance_cmd:
-                                st.metric(
-                                    "Altitude Command", f"{avoidance_cmd[1]:+.1f}"
+                                danger_count = sum(
+                                    1
+                                    for r in avoidance_cmd
+                                    if getattr(r, "risk", None) == "DANGER"
                                 )
+                                st.metric("DANGER tracks", danger_count)
                             else:
-                                st.metric("Altitude Command", "N/A")
+                                st.metric("DANGER tracks", "N/A")
 
                         # Detection details
                         if detections:
@@ -889,14 +891,10 @@ elif page == "🎯 Live Demo":
                         if st.button("▶️ Run Detection", type="primary"):
                             try:
                                 from src.tracking.kalman_tracker import KalmanTracker
-                                from src.avoidance.geometric_planner import (
-                                    GeometricPlanner,
-                                )
+                                from src.risk.zone_assessor import RiskZoneAssessor
 
                                 tracker_v = KalmanTracker()
-                                planner_v = GeometricPlanner(
-                                    frame_width=w_vid, frame_height=h_vid
-                                )
+                                assessor_v = RiskZoneAssessor()
                                 use_full_pipeline = True
                             except Exception:
                                 use_full_pipeline = False
@@ -926,7 +924,10 @@ elif page == "🎯 Live Demo":
                                 avoidance_c = None
                                 if use_full_pipeline:
                                     tracks_v = tracker_v.update(dets)
-                                    avoidance_c = planner_v.plan(tracks_v)
+                                    avoidance_c = assessor_v.assess(
+                                        tracks_v,
+                                        frame_shape=(h_vid, w_vid),
+                                    )
 
                                 annotated_v = draw_detections_on_frame(
                                     frame, dets, avoidance_c

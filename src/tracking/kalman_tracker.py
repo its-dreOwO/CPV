@@ -113,6 +113,10 @@ class KalmanBoxTracker:
         """
         return [float(self.kf.x[4, 0]), float(self.kf.x[5, 0])]
 
+    def get_scale_velocity(self):
+        """Returns the area (scale) velocity estimate ds/dt."""
+        return float(self.kf.x[6, 0])
+
     @staticmethod
     def convert_bbox_to_z(bbox):
         """
@@ -204,6 +208,7 @@ class KalmanTracker(BaseTracker):
                         track_id=trk.id,
                         bbox=[float(d[0]), float(d[1]), float(d[2]), float(d[3])],
                         velocity=trk.get_velocity(),
+                        scale_velocity=trk.get_scale_velocity(),
                         age=trk.age,
                     )
                 )

@@ -9,6 +9,7 @@ class Track:
     track_id: int
     bbox: List[float]
     velocity: List[float] = field(default_factory=lambda: [0.0, 0.0])
+    scale_velocity: float = 0.0
     age: int = 0
 
 

@@ -9,13 +9,15 @@ metrics R3's ``reports/R3/model_comparison.md`` table needs:
     - recall
     - FPS (1000 / per-image inference ms)
     - params (M) and model size (MB)
+    - per-class mAP@0.5 (optional, via --classwise)
 
 Usage
 -----
-    python scripts/evaluate.py --weights models/yolov8m_best.pt \\
-        --data configs/visdrone5.yaml
-    python scripts/evaluate.py --weights models/yolov8m_best.pt \\
-        --data configs/visdrone5.yaml --split test --device cuda \\
+    python scripts/evaluate.py --weights models/yolov8m-best.pt \\
+        --data configs/bdd100k.yaml --split test --device 0 \\
+        --output reports/R3/yolov8m_metrics.json --classwise
+    python scripts/evaluate.py --weights models/yolov8m-best.pt \\
+        --data configs/bdd100k.yaml --split test --device cuda \\
         --output reports/R3/yolov8m_metrics.json
 """
 
@@ -35,7 +37,7 @@ def parse_args():
         "--data",
         type=str,
         required=True,
-        help="Dataset YAML (e.g. configs/visdrone5.yaml)",
+        help="Dataset YAML (e.g. configs/bdd100k.yaml)",
     )
     p.add_argument(
         "--split",
@@ -53,10 +55,15 @@ def parse_args():
         default=None,
         help="Optional path to dump metrics as JSON",
     )
+    p.add_argument(
+        "--classwise",
+        action="store_true",
+        help="Include per-class mAP@0.5 in the output (R3 comparison table)",
+    )
     return p.parse_args()
 
 
-def collect_metrics(model: YOLO, results) -> dict:
+def collect_metrics(model: YOLO, results, classwise: bool = False) -> dict:
     """Pull the R3 comparison-table fields out of an Ultralytics results object."""
     box = results.box
     speed = results.speed  # ms per image: {'preprocess', 'inference', 'postprocess'}
@@ -71,7 +78,20 @@ def collect_metrics(model: YOLO, results) -> dict:
         else None
     )
 
-    return {
+    per_class = None
+    if classwise:
+        names = getattr(model, "names", {}) or {}
+        # results.box.maps is the per-class mAP@0.5:0.95 array; ap50() gives @0.5
+        try:
+            ap50 = results.box.ap50  # ndarray, one entry per class index present
+            per_class = {
+                names.get(i, str(i)): float(ap50[idx])
+                for idx, i in enumerate(results.box.ap_class_index)
+            }
+        except Exception:
+            per_class = None
+
+    metrics = {
         "map50": float(box.map50),
         "map50_95": float(box.map),
         "precision": float(box.mp),
@@ -83,6 +103,9 @@ def collect_metrics(model: YOLO, results) -> dict:
         "params_millions": n_params / 1e6,
         "weights_size_mb": size_mb,
     }
+    if per_class is not None:
+        metrics["per_class"] = per_class
+    return metrics
 
 
 def print_report(metrics: dict, weights: str, data: str, split: str) -> None:
@@ -110,6 +133,15 @@ def print_report(metrics: dict, weights: str, data: str, split: str) -> None:
 def main():
     args = parse_args()
 
+    # Ultralytics resolves a relative `path:` in the data YAML against its own
+    # datasets_dir, so always run from repo root with data/processed/bdd100k
+    # reachable, or pass an absolute path via --data.
+    data_cfg = Path(args.data)
+    if not data_cfg.exists():
+        raise FileNotFoundError(
+            f"Data config not found: {data_cfg} (run from repo root)"
+        )
+
     model = YOLO(args.weights)
     results = model.val(
         data=args.data,
@@ -120,7 +152,7 @@ def main():
         verbose=False,
     )
 
-    metrics = collect_metrics(model, results)
+    metrics = collect_metrics(model, results, classwise=args.classwise)
     print_report(metrics, args.weights, args.data, args.split)
 
     if args.output:

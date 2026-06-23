@@ -21,10 +21,17 @@ split, materialize) is added in the same file by the next task. Mirrors the
 
 from __future__ import annotations
 
+import csv
 import json
+import os
+import shutil
+from collections import Counter
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
+
+import numpy as np
+from sklearn.model_selection import train_test_split
 
 CLASS_NAMES: List[str] = ["vehicle", "person", "two_wheeler"]
 
@@ -111,3 +118,84 @@ def load_bdd_json(path: Path) -> List[dict]:
             f"expected a top-level JSON list in {path}, got {type(data).__name__}"
         )
     return data
+
+
+Pair = Tuple[Path, FrameLabels]
+
+
+def collect_frames(images_dir: Path, labels_json: Path) -> List[Pair]:
+    """Return ``(image_path, FrameLabels)`` for every JSON frame whose image
+    exists under ``images_dir``. Frames with no matching image are skipped."""
+    pairs: List[Pair] = []
+    missing = 0
+    for entry in load_bdd_json(labels_json):
+        fl = convert_frame(entry)
+        img_path = images_dir / fl.name
+        if not img_path.exists():
+            missing += 1
+            continue
+        pairs.append((img_path, fl))
+    if missing:
+        print(f"  warning: {missing} JSON frames had no image in {images_dir}")
+    return pairs
+
+
+def dominant_class(fl: FrameLabels) -> int:
+    """Most frequent class id in a frame, or -1 when it has no obstacle boxes."""
+    counts = Counter(int(line.split()[0]) for line in fl.yolo_lines)
+    if not counts:
+        return -1
+    return counts.most_common(1)[0][0]
+
+
+def stratified_train_val(
+    pairs: List[Pair], val_ratio: float, seed: int
+) -> Tuple[List[Pair], List[Pair]]:
+    """Split ``pairs`` into (train, val), stratified by dominant class."""
+    rng = np.random.default_rng(seed)
+    seed_int = int(rng.integers(0, 2**31))
+    strata = [dominant_class(fl) for _, fl in pairs]
+    train, val = train_test_split(
+        pairs,
+        test_size=val_ratio,
+        stratify=strata,
+        random_state=seed_int,
+    )
+    return train, val
+
+
+def write_split(
+    split_name: str, pairs: List[Pair], out_root: Path, copy: bool = False
+) -> None:
+    """Materialize a split: symlink (or copy) images and write YOLO labels."""
+    img_out = out_root / split_name / "images"
+    lbl_out = out_root / split_name / "labels"
+    img_out.mkdir(parents=True, exist_ok=True)
+    lbl_out.mkdir(parents=True, exist_ok=True)
+    for img_path, fl in pairs:
+        dst_img = img_out / img_path.name
+        if not dst_img.exists():
+            if copy:
+                shutil.copy2(img_path, dst_img)
+            else:
+                os.symlink(img_path.resolve(), dst_img)
+        body = "\n".join(fl.yolo_lines)
+        (lbl_out / f"{img_path.stem}.txt").write_text(body + ("\n" if body else ""))
+
+
+def write_attributes(rows, out_csv: Path) -> None:
+    """Write the ``name,split,weather,scene,timeofday`` manifest."""
+    out_csv.parent.mkdir(parents=True, exist_ok=True)
+    with out_csv.open("w", newline="") as f:
+        writer = csv.writer(f)
+        writer.writerow(["name", "split", "weather", "scene", "timeofday"])
+        for name, split, attrs in rows:
+            writer.writerow(
+                [
+                    name,
+                    split,
+                    attrs.get("weather", ""),
+                    attrs.get("scene", ""),
+                    attrs.get("timeofday", ""),
+                ]
+            )

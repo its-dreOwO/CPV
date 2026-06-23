@@ -1,0 +1,14 @@
+# BDD100K detection dataset — 3 coarse obstacle classes.
+# Produced by scripts/preprocess.py. Train from the repo root.
+# NOTE: Ultralytics resolves a relative `path` against its own datasets_dir
+# (~/.config/Ultralytics/settings.json), not the cwd. Plan 3 pins this at
+# train time; for now the layout below is the contract preprocess.py writes.
+path: data/processed/bdd100k
+train: train/images
+val: val/images
+test: test/images
+nc: 3
+names:
+  0: vehicle
+  1: person
+  2: two_wheeler

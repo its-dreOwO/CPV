@@ -26,6 +26,9 @@ tqdm>=4.66.0
 pyyaml>=6.0.1
 scikit-learn>=1.4.0
 
+# Data acquisition
+kaggle>=1.6.0
+
 # Dev / CI
 black>=24.0.0
 flake8>=7.0.0

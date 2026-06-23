@@ -1,4 +1,4 @@
-"""Modal training script — CPV obstacle avoidance.
+"""Modal training script — CPV vehicle-perception (dashcam obstacle detection).
 
 Quick start
 -----------
@@ -8,10 +8,11 @@ Quick start
 
 2. Upload the dataset — tar first so it's one file, not 8000 (one-time):
        tar czf processed.tar.gz -C data processed
-       modal volume create cpv-data
-       modal volume put cpv-data processed.tar.gz /processed.tar.gz
+       modal volume create cpv-bdd100k
+       modal volume put cpv-bdd100k processed.tar.gz /processed.tar.gz
        modal run modal_train.py::extract_dataset
        rm processed.tar.gz   # optional cleanup
+   After extraction the dataset is at /vol/processed/bdd100k.
 
 3. Sanity check — 5 epochs on YOLOv8n (~15 min, ~$0.15 on L4):
        modal run modal_train.py::main --model yolov8n --epochs 5
@@ -38,9 +39,33 @@ from pathlib import Path
 
 import modal
 
-APP_NAME = "cpv-obstacle-avoidance"
-VOLUME_NAME = "cpv-data"
+APP_NAME = "cpv-vehicle-perception"
+VOLUME_NAME = "cpv-bdd100k"
 VOLUME_PATH = Path("/vol")
+# Dataset is extracted to /vol/processed/bdd100k (the dir holding train/ val/ test/).
+DATASET_SUBDIR = "processed/bdd100k"
+
+
+def build_train_cmd(model, epochs, dataset_path, run_dir, resume):
+    """Argv for the in-container scripts/train.py call. Pure + unit-testable."""
+    cmd = [
+        "python",
+        "/app/scripts/train.py",
+        "--config",
+        f"/app/configs/{model}.yaml",
+        "--epochs",
+        str(epochs),
+        "--device",
+        "0",
+        "--data-root",
+        str(dataset_path),
+        "--project",
+        str(run_dir),
+    ]
+    if resume:
+        cmd.append("--resume")
+    return cmd
+
 
 app = modal.App(APP_NAME)
 volume = modal.Volume.from_name(VOLUME_NAME, create_if_missing=True)
@@ -75,7 +100,7 @@ def train(model: str, epochs: int, fresh: bool = False) -> None:
     import os
     import shutil
 
-    dataset_path = VOLUME_PATH / "processed"
+    dataset_path = VOLUME_PATH / DATASET_SUBDIR
     if not dataset_path.exists():
         raise RuntimeError(
             "Dataset not found in volume. Run:\n"
@@ -95,29 +120,14 @@ def train(model: str, epochs: int, fresh: bool = False) -> None:
         print(f"--fresh: cleared {model_run_dir}")
 
     if not fresh and last_pt.exists():
-        extra = ["--resume"]
         print(f"Found checkpoint at {last_pt} — resuming.")
     else:
         if model_run_dir.exists():
             shutil.rmtree(model_run_dir)
             print(f"Cleared previous run at {model_run_dir}")
-        extra = []
 
-    cmd = [
-        "python",
-        "/app/scripts/train.py",
-        "--config",
-        f"/app/configs/{model}.yaml",
-        "--epochs",
-        str(epochs),
-        "--device",
-        "0",
-        "--data-root",
-        str(dataset_path),
-        "--project",
-        str(run_dir),
-        *extra,
-    ]
+    resume = (not fresh) and last_pt.exists()
+    cmd = build_train_cmd(model, epochs, dataset_path, run_dir, resume)
     print("Running:", " ".join(cmd))
     result = subprocess.run(cmd, cwd="/app", env={**os.environ}, bufsize=1)
     volume.commit()

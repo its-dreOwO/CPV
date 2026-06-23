@@ -193,8 +193,8 @@ python scripts/train.py --config configs/yolov8m.yaml --resume
 |-----|------|------|-------|
 | L4 | $0.80 | 24 GB | Default; best value for all three models |
 | A10G | $1.10 | 24 GB | Fallback if L4 unavailable |
-| T4 | $0.59 | 16 GB | Budget option; RT-DETR-L may OOM at batch > 4 |
-| L40S / A100 | higher | 48 GB+ | Use for RT-DETR-L if L4 OOMs |
+| T4 | $0.59 | 16 GB | Budget option for YOLOv8n/m; RT-DETR-L is an OOM risk on T4 (16 GB) — `modal_train.py` notes it may OOM around batch 8; the shipped config uses `batch: 4` tuned for the L4 (24 GB), not T4 |
+| L40S / A100 | higher | 48 GB+ | Recommended for RT-DETR-L; eliminates the memory risk |
 
 Estimated full-run cost per model on L4: ~$1–2 (50 epochs, BDD100K 57k images).
 Modal volume storage: ~$0.20/GB/month (~$0.40/mo for the ~1.9 GB dataset).

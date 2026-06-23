@@ -29,7 +29,7 @@ plans, and [`CLAUDE.md`](CLAUDE.md) for the working contract.
 
 ```
 CPV/
-|-- configs/                  # per-model YAMLs (yolov8n/m, rtdetr) + bdd100k dataset YAML (Plan 2)
+|-- configs/                  # per-model YAMLs (yolov8n/m, yolov10n) + bdd100k dataset YAML (Plan 2)
 |-- data/
 |   |-- raw/                  # original BDD100K / KITTI trees (gitignored)
 |   |-- processed/            # 3-class, 70/15/15 stratified split (gitignored)
@@ -84,7 +84,7 @@ size, epochs) so any performance gap is attributable to the model:
 |-------------------------|-------------|-----------------------------------|
 | `configs/yolov8n.yaml`  | YOLOv8n     | Speed baseline / embedded floor   |
 | `configs/yolov8m.yaml`  | YOLOv8m     | Primary R4 demo model             |
-| `configs/rtdetr.yaml`   | RT-DETR-L   | Accuracy ceiling / arch contrast  |
+| `configs/yolov10n.yaml` | YOLOv10n    | NMS-free end-to-end / arch contrast |
 
 ```bash
 python scripts/train.py --config configs/yolov8m.yaml --epochs 50 --device cuda

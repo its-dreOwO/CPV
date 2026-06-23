@@ -222,7 +222,7 @@ def find_available_weights():
     candidates = []
     models_dir = Path("models")
     # Prefer our trained checkpoint names first
-    preferred = ["yolov8n-best.pt", "yolov8m-best.pt", "rtdetr-best.pt"]
+    preferred = ["yolov8n-best.pt", "yolov8m-best.pt", "yolov10n-best.pt"]
     if models_dir.exists():
         for name in preferred:
             p = models_dir / name
@@ -447,7 +447,7 @@ if page == "🏠 Overview":
         <div class="pipeline-step">
             <h4>🔍 2. Detection — YoloDetector</h4>
             <p>Ultralytics YOLO model → List[Detection] with bbox [x1,y1,x2,y2], confidence, class_id.<br>
-            Models: YOLOv8n (speed) · YOLOv8m (balanced) · RT-DETR-L (accuracy)</p>
+            Models: YOLOv8n (speed) · YOLOv8m (balanced) · YOLOv10n (NMS-free)</p>
         </div>
         <div class="pipeline-step">
             <h4>📡 3. Tracking — KalmanTracker</h4>
@@ -551,7 +551,7 @@ elif page == "📊 Training Results":
     st.info(
         "🔧 **Pending.** The project pivoted to a vehicle & pedestrian "
         "risk-advisory system on **BDD100K**. The 3-model comparison "
-        "(YOLOv8n / YOLOv8m / RT-DETR-L) trains on BDD100K in the data "
+        "(YOLOv8n / YOLOv8m / YOLOv10n) trains on BDD100K in the data "
         "pipeline (Plan 2) and training/evaluation phase (Plan 3). Results — "
         "mAP@0.5, per-class AP, FPS, plus the **KITTI cross-dataset "
         "generalization** and **day/night robustness** findings — populate "
@@ -564,16 +564,16 @@ elif page == "📊 Training Results":
     )
     lineup = pd.DataFrame(
         {
-            "Model": ["YOLOv8n", "YOLOv8m", "RT-DETR-L"],
+            "Model": ["YOLOv8n", "YOLOv8m", "YOLOv10n"],
             "Role": [
                 "Speed baseline / embedded floor",
                 "Primary R4 demo model",
-                "Accuracy ceiling / architecture contrast",
+                "NMS-free end-to-end / architecture contrast",
             ],
             "Axis": [
                 "capacity (n→m)",
                 "capacity / arch pivot",
-                "architecture (CNN→transformer)",
+                "version/paradigm (v8n→v10n)",
             ],
             "Status": ["⬜ Pending", "⬜ Pending", "⬜ Pending"],
         }
@@ -605,7 +605,7 @@ elif page == "🎯 Live Demo":
             "checkpoint files in `models/` with the expected names:\n"
             "- `models/yolov8n-best.pt` — speed baseline\n"
             "- `models/yolov8m-best.pt` — primary R4 demo model\n"
-            "- `models/rtdetr-best.pt` — accuracy ceiling\n\n"
+            "- `models/yolov10n-best.pt` — NMS-free end-to-end contrast\n\n"
             "As a fallback, tick the box below to use a generic pretrained YOLOv8m "
             "(COCO 80-class) — note: class names will not match the 3-class scheme."
         )

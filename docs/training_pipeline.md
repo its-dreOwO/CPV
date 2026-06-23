@@ -42,16 +42,23 @@ Three models provide two controlled comparison axes for R3:
 
 | Handle | Architecture | Config | Role |
 |--------|-------------|--------|------|
-| `yolov8n` | YOLOv8-nano (CNN) | `configs/yolov8n.yaml` | Speed floor / embedded baseline |
-| `yolov8m` | YOLOv8-medium (CNN) | `configs/yolov8m.yaml` | Primary R4 demo model |
-| `rtdetr` | RT-DETR-L (transformer) | `configs/rtdetr.yaml` | Accuracy ceiling / architecture contrast |
+| `yolov8n` | YOLOv8-nano (CNN, NMS) | `configs/yolov8n.yaml` | Speed floor / shared anchor |
+| `yolov8m` | YOLOv8-medium (CNN, NMS) | `configs/yolov8m.yaml` | Primary R4 demo model |
+| `yolov10n` | YOLOv10-nano (CNN, NMS-free) | `configs/yolov10n.yaml` | NMS-free end-to-end / architecture contrast |
 
 Axis 1 (capacity): `yolov8n` → `yolov8m` — answers "how much does model scale help?"
-Axis 2 (architecture): `yolov8m` → `rtdetr` — answers "CNN vs transformer, same data?"
+Axis 2 (version/paradigm): `yolov8n` → `yolov10n` — answers "does a newer, NMS-free
+end-to-end detector beat v8 at the same (nano) scale?"
 
-RT-DETR-L is configured for `batch: 4` (L4 24 GB). YOLOv8n uses `batch: 64`;
-YOLOv8m uses `batch: 16` (see its YAML). If L4 is unavailable for RT-DETR-L,
-request an L40S or A100 via the Modal GPU override.
+All three fit on an L4 (24 GB): `yolov8n` and `yolov10n` use `batch: 64`,
+`yolov8m` uses `batch: 32` (see each YAML).
+
+> **Note (2026-06-23):** the original lineup's third model was RT-DETR-L
+> (transformer, accuracy ceiling). It was dropped for **YOLOv10n** on budget
+> grounds — RT-DETR cost ~$0.47/epoch (≈$23/run) on any GPU vs ~$5.6 for a full
+> YOLOv10n run. YOLOv10n keeps the *non-NMS, end-to-end* paradigm contrast that
+> motivated RT-DETR while fitting the compute budget. `configs/rtdetr.yaml` was
+> removed.
 
 ---
 
@@ -160,17 +167,17 @@ Run each model independently. Use `--fresh` to discard any prior partial run
 for that model:
 
 ```bash
-modal run modal_train.py::main --model yolov8n --epochs 50 --fresh
-modal run modal_train.py::main --model yolov8m --epochs 50 --fresh
-modal run modal_train.py::main --model rtdetr  --epochs 50 --fresh
+modal run modal_train.py::main --model yolov8n  --epochs 50 --fresh
+modal run modal_train.py::main --model yolov8m  --epochs 50 --fresh
+modal run modal_train.py::main --model yolov10n --epochs 50 --fresh
 ```
 
 ### 4.5 Download trained weights
 
 ```bash
-modal run modal_train.py::fetch --model yolov8n   # saves models/yolov8n-best.pt
-modal run modal_train.py::fetch --model yolov8m   # saves models/yolov8m-best.pt
-modal run modal_train.py::fetch --model rtdetr    # saves models/rtdetr-best.pt
+modal run modal_train.py::fetch --model yolov8n    # saves models/yolov8n-best.pt
+modal run modal_train.py::fetch --model yolov8m    # saves models/yolov8m-best.pt
+modal run modal_train.py::fetch --model yolov10n   # saves models/yolov10n-best.pt
 ```
 
 Weights files are gitignored (`models/*.pt`). Store them locally or in cloud
@@ -195,12 +202,13 @@ python scripts/train.py --config configs/yolov8m.yaml --resume
 
 | GPU | $/hr | VRAM | Notes |
 |-----|------|------|-------|
-| L4 | $0.80 | 24 GB | Default; best value for all three models |
+| L4 | $0.80 | 24 GB | Default; all three models fit and train here |
 | A10G | $1.10 | 24 GB | Fallback if L4 unavailable |
-| T4 | $0.59 | 16 GB | Budget option for YOLOv8n/m; RT-DETR-L is an OOM risk on T4 (16 GB) — `modal_train.py` notes it may OOM around batch 8; the shipped config uses `batch: 4` tuned for the L4 (24 GB), not T4 |
-| L40S / A100 | higher | 48 GB+ | Recommended for RT-DETR-L; eliminates the memory risk |
+| T4 | $0.59 | 16 GB | Budget option; the three nano/medium CNNs fit fine |
+| L40S / A100 | $1.95+ | 48 GB+ | Faster wall-clock (≈3× compute), but per-epoch $ is similar — only worth it to shorten time, not to save budget |
 
-Estimated full-run cost per model on L4: ~$1–2 (50 epochs, BDD100K 57k images).
+Estimated full-run cost on L4 (50 epochs, BDD100K 57k images): ~$5.6 for each
+nano (`yolov8n`, `yolov10n`), ~$13 for `yolov8m`.
 Modal volume storage: ~$0.20/GB/month (~$0.40/mo for the ~1.9 GB dataset).
 
 ---
@@ -230,11 +238,11 @@ python scripts/evaluate.py \
     --output reports/R3/yolov8m_metrics.json
 
 python scripts/evaluate.py \
-    --weights models/rtdetr-best.pt \
+    --weights models/yolov10n-best.pt \
     --data configs/bdd100k.yaml \
     --split test --device 0 \
     --classwise \
-    --output reports/R3/rtdetr_metrics.json
+    --output reports/R3/yolov10n_metrics.json
 ```
 
 **Metrics emitted** (in the JSON and printed to stdout):
@@ -379,16 +387,16 @@ the trapezoid is too wide or not angled correctly.
 reports/R3/
   yolov8n_metrics.json          # BDD100K test mAP, FPS, params
   yolov8m_metrics.json
-  rtdetr_metrics.json
+  yolov10n_metrics.json
   yolov8n_kitti_metrics.json    # KITTI zero-shot (cross-dataset)
   yolov8m_kitti_metrics.json
-  rtdetr_kitti_metrics.json
+  yolov10n_kitti_metrics.json
   yolov8n_robustness_timeofday.json   # day / night / dawn / dusk slices
   yolov8m_robustness_timeofday.json
-  rtdetr_robustness_timeofday.json
+  yolov10n_robustness_timeofday.json
   yolov8n_robustness_weather.json     # clear / rainy / foggy / etc.
   yolov8m_robustness_weather.json
-  rtdetr_robustness_weather.json
+  yolov10n_robustness_weather.json
   risk_validation.json          # Approach C: DANGER precision vs KITTI GT distance
 ```
 
@@ -413,9 +421,9 @@ modal volume put cpv-bdd100k processed.tar.gz /processed.tar.gz
 modal run modal_train.py::main --model yolov8n --epochs 5
 
 # Full training (all three models)
-modal run modal_train.py::main --model yolov8n --epochs 50 --fresh
-modal run modal_train.py::main --model yolov8m --epochs 50 --fresh
-modal run modal_train.py::main --model rtdetr  --epochs 50 --fresh
+modal run modal_train.py::main --model yolov8n  --epochs 50 --fresh
+modal run modal_train.py::main --model yolov8m  --epochs 50 --fresh
+modal run modal_train.py::main --model yolov10n --epochs 50 --fresh
 
 # Download weights
 modal run modal_train.py::fetch --model yolov8n

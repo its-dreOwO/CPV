@@ -19,19 +19,19 @@ Quick start
 3. Sanity check — 5 epochs on YOLOv8n (~15 min, ~$0.15 on L4):
        modal run modal_train.py::main --model yolov8n --epochs 5
 
-4. Full training runs (run independently, ~$1–2 each on L4):
-       modal run modal_train.py::main --model yolov8n --epochs 50
-       modal run modal_train.py::main --model yolov8m --epochs 50
-       modal run modal_train.py::main --model rtdetr  --epochs 50
+4. Full training runs (run independently; ~$5.6 each nano, ~$13 for yolov8m on L4):
+       modal run modal_train.py::main --model yolov8n  --epochs 50
+       modal run modal_train.py::main --model yolov8m  --epochs 50
+       modal run modal_train.py::main --model yolov10n --epochs 50
 
 5. Download a trained model:
        modal run modal_train.py::fetch --model yolov8m
        # saves to models/yolov8m-best.pt
 
 GPU cost guide (Modal pay-as-you-go):
-    L4   $0.80/hr  24 GB VRAM  — default, best value for these models
+    L4   $0.80/hr  24 GB VRAM  — default; all three models fit and train here
     A10G $1.10/hr  24 GB VRAM  — fallback if L4 unavailable
-    T4   $0.59/hr  16 GB VRAM  -- budget option; RT-DETR may OOM at batch 8
+    T4   $0.59/hr  16 GB VRAM  -- budget option; the nano/medium CNNs fit fine
 
 Storage: Modal volumes cost ~$0.20/GB/month (~$0.40/mo for this 1.9 GB dataset).
 """
@@ -85,13 +85,13 @@ image = (
     .run_commands(
         'python -c "'
         "from ultralytics import YOLO; "
-        "[YOLO(w) for w in ['yolov8n.pt','yolov8m.pt','rtdetr-l.pt']]\""
+        "[YOLO(w) for w in ['yolov8n.pt','yolov8m.pt','yolov10n.pt']]\""
     )
     .add_local_dir("configs", remote_path="/app/configs")
     .add_local_dir("scripts", remote_path="/app/scripts")
 )
 
-_VALID_MODELS = ("yolov8n", "yolov8m", "rtdetr")
+_VALID_MODELS = ("yolov8n", "yolov8m", "yolov10n")
 
 
 @app.function(

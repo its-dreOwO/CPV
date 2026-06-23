@@ -154,11 +154,19 @@ performance gap is attributable to the model, not the training loop.
 
 | Model | Role | Axis |
 |-------|------|------|
-| **YOLOv8n** | Speed baseline / embedded floor | capacity (n → m) |
+| **YOLOv8n** | Speed baseline / embedded floor (shared anchor) | capacity (n → m) |
 | **YOLOv8m** | Primary demo model (ships in R4) | capacity / architecture pivot |
-| **RT-DETR-L** | Accuracy ceiling / architecture contrast | architecture (CNN → transformer) |
+| **YOLOv10n** | NMS-free end-to-end / architecture contrast | version·paradigm (v8n → v10n) |
 
-`configs/` keeps `yolov8n.yaml`, `yolov8m.yaml`, `rtdetr.yaml` (adapted to
+> **Amendment (2026-06-23):** RT-DETR-L was replaced by **YOLOv10n**. At
+> operator-run time the compute budget ($28.57) could not fund a full RT-DETR
+> run (~$0.47/epoch ≈ $23, over half the budget, on any GPU). YOLOv10n is an
+> NMS-free, end-to-end CNN detector — it preserves RT-DETR's core contribution
+> (a non-NMS detection paradigm) at ~$5.6/run, and its latency focus aligns with
+> the FPS ≥ 30 rule. With v8n as the shared anchor the contrast becomes
+> v8n → v10n (version/paradigm, matched nano scale) rather than CNN → transformer.
+
+`configs/` keeps `yolov8n.yaml`, `yolov8m.yaml`, `yolov10n.yaml` (adapted to
 BDD100K) plus a new dataset config (e.g. `bdd100k.yaml`, `nc=3`). Image size
 640×640, seed 42, selection rule **highest mAP@0.5 subject to FPS ≥ 30**.
 `modal_train.py` kept and adapted for the BDD100K 3-model runs.
@@ -171,7 +179,7 @@ BDD100K) plus a new dataset config (e.g. `bdd100k.yaml`, `nc=3`). Image size
 |-------|---------|
 | **R1** | New problem statement + this locked design + BDD100K data-validation report |
 | **R2** | Preprocess + one model (YOLOv8n) trained on BDD100K + initial risk-overlay demo |
-| **R3** | **3-model comparison** (n / m / RT-DETR) on BDD100K test **+** KITTI cross-dataset generalization **+** risk-zone validation vs KITTI ground truth **+** day/night & weather robustness breakdown (from BDD100K per-image attributes) |
+| **R3** | **3-model comparison** (v8n / v8m / v10n) on BDD100K test **+** KITTI cross-dataset generalization **+** risk-zone validation vs KITTI ground truth **+** day/night & weather robustness breakdown (from BDD100K per-image attributes) |
 | **R4** | Best model wired into the live dashcam demo + end-to-end FPS + Streamlit showcase |
 
 `docs/training_pipeline.md` and `CLAUDE.md` are rewritten to this spec during

@@ -95,14 +95,16 @@ Only the **detector** is trained. Tracker = Kalman + Hungarian (rule-based). Ris
 - **Held-out — KITTI** (cross-dataset). Used in R3 for (a) zero-shot generalization (domain gap) and (b) **validating the risk-zone heuristic against ground-truth 3D/depth** distances.
 - Both gitignored under `data/raw/` and `data/processed/`.
 
-**Model lineup for the R3 >=3-model comparison (kept):**
-- **YOLOv8n** — speed baseline / embedded floor
+**Model lineup for the R3 >=3-model comparison:**
+- **YOLOv8n** — speed baseline / embedded floor (shared anchor)
 - **YOLOv8m** — primary demo model (ships in R4)
-- **RT-DETR-L** — accuracy ceiling / architecture contrast (transformer vs CNN)
+- **YOLOv10n** — NMS-free, end-to-end CNN; architecture/paradigm contrast at matched (nano) capacity
 
-Two controlled axes — capacity (n -> m) and architecture (m -> RT-DETR-L) — so any gap is attributable to the model, not the training loop. All use the same Ultralytics API.
+With YOLOv8n as the shared anchor, two clean axes isolate the cause of any gap: capacity (v8n -> v8m, same architecture) and version/paradigm (v8n -> v10n, same nano scale). All use the same Ultralytics API.
 
-**Locked decisions:** image size 640x640, epochs 50 (full) / 5 (sanity), seed = 42 everywhere, 70/15/15 stratified split, selection rule **highest mAP@0.5 subject to FPS >= 30**. Compute target: Nvidia L4 (24 GB); RT-DETR-L needs L40S/A100 for batch=16.
+> **Lineup change (2026-06-23, budget-driven):** RT-DETR-L was dropped in favor of **YOLOv10n**. RT-DETR cost ~$0.47/epoch (≈$23 for a full run) regardless of GPU — over half the available compute budget — while YOLOv10n trains for ~$5.6. YOLOv10n preserves RT-DETR's key contribution (a *non-NMS, end-to-end* detection paradigm) at a fraction of the cost, and its latency focus fits the FPS>=30 selection rule. `configs/rtdetr.yaml` was removed.
+
+**Locked decisions:** image size 640x640, epochs 50 (full) / 5 (sanity), seed = 42 everywhere, 70/15/15 stratified split, selection rule **highest mAP@0.5 subject to FPS >= 30**. Compute target: Nvidia L4 (24 GB) — all three models fit on L4 (YOLOv10n at batch 64 like the other nano).
 
 ## Pipeline status (as of 2026-06-23)
 

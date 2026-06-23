@@ -1,0 +1,19 @@
+# YOLOv10n — NMS-free, end-to-end CNN detector
+# Role: architecture/paradigm contrast for R3 at matched (nano) capacity.
+# Replaces RT-DETR-L: it keeps RT-DETR's non-NMS, end-to-end detection
+# paradigm (its consistent dual-assignment head needs no NMS) while training
+# at a fraction of the cost — and its low-latency design speaks directly to
+# the FPS>=30 selection rule. With yolov8n as the shared anchor the lineup
+# now isolates two clean axes: capacity (v8n -> v8m) and version/architecture
+# (v8n -> v10n).
+model: yolov10n.pt
+data: configs/bdd100k.yaml
+imgsz: 640
+batch: 64
+workers: 8
+cache: disk
+amp: true
+patience: 30
+seed: 42
+project: runs
+name: yolov10n

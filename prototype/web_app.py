@@ -28,6 +28,18 @@ import numpy as np
 import pandas as pd
 import streamlit as st
 
+# Import RiskLevel constants for risk comparisons.  Guarded so the app can
+# still load (and fall back gracefully) if src is not yet importable.
+try:
+    from src.risk.assessor import RiskLevel
+except Exception:
+    # Fallback shim keeps bare-string comparisons working without src on path.
+    class RiskLevel:  # type: ignore[no-redef]
+        SAFE = "SAFE"
+        CAUTION = "CAUTION"
+        DANGER = "DANGER"
+
+
 # ---------------------------------------------------------------------------
 # Page config
 # ---------------------------------------------------------------------------
@@ -287,10 +299,12 @@ def draw_pipeline_frame(
         # HUD: risk summary
         if risked_tracks:
             danger_n = sum(
-                1 for r in risked_tracks if getattr(r, "risk", None) == "DANGER"
+                1 for r in risked_tracks if getattr(r, "risk", None) == RiskLevel.DANGER
             )
             caution_n = sum(
-                1 for r in risked_tracks if getattr(r, "risk", None) == "CAUTION"
+                1
+                for r in risked_tracks
+                if getattr(r, "risk", None) == RiskLevel.CAUTION
             )
             hud = (
                 f"DANGER:{danger_n}  CAUTION:{caution_n}"
@@ -651,9 +665,13 @@ elif page == "🎯 Live Demo":
                             tracks = tracker.update(detections)
                             risked_tracks = assessor.assess(tracks, frame_shape=(h, w))
                             ego_poly = assessor.ego_path_polygon((h, w))
-                        except Exception:
+                        except Exception as e:
                             risked_tracks = None
                             ego_poly = None
+                            st.warning(
+                                f"Risk pipeline unavailable — showing detection only."
+                                f" ({e})"
+                            )
 
                         # Draw results with ego-path overlay + risk colors
                         annotated = draw_pipeline_frame(
@@ -686,7 +704,7 @@ elif page == "🎯 Live Demo":
                                 danger_count = sum(
                                     1
                                     for r in risked_tracks
-                                    if getattr(r, "risk", None) == "DANGER"
+                                    if getattr(r, "risk", None) == RiskLevel.DANGER
                                 )
                                 st.metric("DANGER tracks", danger_count)
                             else:
@@ -767,9 +785,13 @@ elif page == "🎯 Live Demo":
                                 tracker_v = KalmanTracker()
                                 assessor_v = RiskZoneAssessor()
                                 use_full_pipeline = True
-                            except Exception:
+                            except Exception as e:
                                 assessor_v = None
                                 use_full_pipeline = False
+                                st.warning(
+                                    f"Risk pipeline unavailable — showing detection only."
+                                    f" ({e})"
+                                )
 
                             # Process frames
                             out_path = tempfile.NamedTemporaryFile(

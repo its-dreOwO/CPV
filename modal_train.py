@@ -6,7 +6,7 @@ Quick start
        pip install modal
        modal setup
 
-2. Upload the dataset — tar first so it's one file, not 8000 (one-time):
+2. Upload the dataset — tar first so it's one file, not ~80k (one-time):
        tar czf processed.tar.gz -C data processed
        modal volume create cpv-bdd100k
        modal volume put cpv-bdd100k processed.tar.gz /processed.tar.gz

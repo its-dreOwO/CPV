@@ -1,0 +1,8 @@
+# KITTI held-out eval — same 3 classes as BDD100K (zero-shot, never trained on).
+path: data/processed/kitti
+val: images
+nc: 3
+names:
+  0: vehicle
+  1: person
+  2: two_wheeler

@@ -16,7 +16,7 @@ Submissions are organized into four rounds (`reports/R1`-`R4`), each requiring s
 - Design spec: `docs/superpowers/specs/2026-06-22-vehicle-avoidance-pivot-design.md`
 - Implementation plans: `docs/superpowers/plans/` (Plan 1 = risk-assessor code pivot, Plan 2 = BDD100K data pipeline, Plan 3 = training + eval + docs rewrite)
 
-> **Note:** the old drone `docs/training_pipeline.md` was removed; the design spec under `docs/superpowers/specs/` is the source of truth. A vehicle training pipeline doc is authored in Plan 3 when training lands. Active work is on branch `pivot/vehicle-avoidance`.
+> **Note:** the design spec under `docs/superpowers/specs/` is the source of truth. The vehicle training pipeline doc was authored in Plan 3 — see `docs/training_pipeline.md` (Modal training runbook, evaluation, KITTI zero-shot, risk validation). Active work is on branch `pivot/vehicle-avoidance`.
 
 ## Commands
 
@@ -82,7 +82,7 @@ frame (dashcam, monocular np.ndarray)
 
 `main.py` wires these together for the live demo and overlays the ego-path region + color-coded risk boxes. `prototype/web_app.py` is a Streamlit showcase app reusing the same `src.*` pipeline classes; it inserts the repo root onto `sys.path` so `from src.*` resolves and reads its theme from the repo-root `.streamlit/config.toml` — always launch it from the repo root. `scripts/train.py` loads a model config YAML and calls `ultralytics.YOLO.train()`. `scripts/preprocess.py` does the class remap + stratified split; `scripts/validate_data.py` runs pre-training integrity checks (helpers in `src/utils/data_validation.py`).
 
-> The `src/risk/` package replaces the former `src/avoidance/` (the word "avoidance" implied a control loop). `validate_data.py`, `train.py`, `evaluate.py`, and `modal_train.py` still need Plan 3 cleanup for the vehicle pipeline.
+> The `src/risk/` package replaces the former `src/avoidance/` (the word "avoidance" implied a control loop). Plan 3 cleaned up the vehicle pipeline: `evaluate.py` (per-class mAP, drop visdrone refs) and `modal_train.py` (correct `--data-root`, vehicle naming) are done; `scripts/evaluate_robustness.py`, `scripts/preprocess_kitti.py`, `scripts/validate_risk.py`, and `src/utils/kitti.py` were added.
 
 **Import style:** modules import from `src.*` (absolute), so always run pytest/scripts from the repo root.
 
@@ -114,7 +114,8 @@ The pivot is mid-implementation. Old drone training results (VisDrone) are **sup
 | Design spec | ✅ approved + committed |
 | Plan 1 — risk-assessor code pivot (`src/risk/`) | ✅ done |
 | Plan 2 — BDD100K data pipeline (download, JSON→YOLO, 3-class remap) | ✅ done |
-| Plan 3 — training (3 models on BDD100K) + KITTI eval + docs/Streamlit rewrite | ⬜ next |
+| Plan 3 — training/eval/risk-validation scripts + docs/Streamlit rewrite | ✅ code done |
+| Plan 3 — actual GPU training runs (3 models on Modal L4) + KITTI download/eval | ⬜ operator-pending |
 
 ## R-round mapping
 

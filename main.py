@@ -1,4 +1,4 @@
-"""Demo pipeline: run detection + tracking + avoidance on a video source."""
+"""Demo pipeline: run detection + tracking + risk assessment on a video source."""
 
 import argparse
 import random
@@ -9,14 +9,16 @@ import torch
 
 from src.detection.yolo_detector import YoloDetector
 from src.tracking.kalman_tracker import KalmanTracker
-from src.avoidance.geometric_planner import GeometricPlanner
-from src.utils.visualizer import draw_tracks
+from src.risk.zone_assessor import RiskZoneAssessor
+from src.utils.visualizer import draw_risk
 
 IMAGE_EXTS = {".jpg", ".jpeg", ".png", ".bmp", ".tif", ".tiff"}
 
 
 def parse_args():
-    parser = argparse.ArgumentParser(description="Drone obstacle avoidance demo")
+    parser = argparse.ArgumentParser(
+        description="Vehicle pedestrian/vehicle risk-advisory demo"
+    )
     parser.add_argument(
         "--source",
         type=str,
@@ -65,7 +67,7 @@ def run_pipeline(
     frames,
     detector,
     tracker,
-    planner,
+    assessor,
     delay_ms: int,
     reset_per_frame: bool = False,
     save_dir: Path = None,
@@ -75,10 +77,11 @@ def run_pipeline(
     for name, frame in frames:
         if reset_per_frame:
             tracker.reset()
+        h, w = frame.shape[:2]
         detections = detector.detect(frame)
         tracks = tracker.update(detections)
-        avoidance_cmd = planner.plan(tracks)
-        vis = draw_tracks(frame, tracks, avoidance_cmd)
+        risked = assessor.assess(tracks, frame_shape=(h, w))
+        vis = draw_risk(frame, risked, ego_polygon=assessor.ego_path_polygon((h, w)))
 
         if video_out:
             video_out.write(vis)
@@ -87,7 +90,7 @@ def run_pipeline(
             cv2.imwrite(str(out_path), vis)
             print(f"Saved {out_path}")
 
-        cv2.imshow("Drone Obstacle Avoidance", vis)
+        cv2.imshow("Vehicle Risk Advisory", vis)
         if cv2.waitKey(delay_ms) & 0xFF == ord("q"):
             break
     cv2.destroyAllWindows()
@@ -139,7 +142,7 @@ def main():
     print(f"Initializing Detector with {args.weights} on {args.device}...")
     detector = YoloDetector(model_path=args.weights)
     tracker = KalmanTracker()
-    planner = GeometricPlanner(frame_width=w, frame_height=h)
+    assessor = RiskZoneAssessor()
 
     video_out = None
     if save_dir and not source_path.is_dir():
@@ -154,7 +157,7 @@ def main():
             frames,
             detector,
             tracker,
-            planner,
+            assessor,
             delay_ms=args.delay,
             reset_per_frame=source_path.is_dir(),
             save_dir=save_dir,

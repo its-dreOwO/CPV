@@ -1,6 +1,6 @@
 """
-CPV301 Drone Obstacle Avoidance — Web Prototype
-================================================
+CPV301 Vehicle Pedestrian & Vehicle Avoidance — Web Prototype
+=============================================================
 Streamlit app for project showcase:
   1. Project overview & architecture
   2. Training results dashboard (model comparison)
@@ -28,8 +28,8 @@ import streamlit as st
 # Page config
 # ---------------------------------------------------------------------------
 st.set_page_config(
-    page_title="CPV301 — Drone Obstacle Avoidance",
-    page_icon="🛸",
+    page_title="CPV301 — Vehicle Pedestrian & Vehicle Avoidance",
+    page_icon="🚗",
     layout="wide",
     initial_sidebar_state="expanded",
 )
@@ -196,22 +196,9 @@ button[data-baseweb="tab"] {
 
 
 # ---------------------------------------------------------------------------
-# Training results data (from CLAUDE.md — Phase 6)
+# Training results — pending BDD100K training (Plans 2-3)
 # ---------------------------------------------------------------------------
-TRAINING_RESULTS = {
-    "Model": ["YOLOv8n", "YOLOv8m", "RT-DETR-L"],
-    "mAP@0.5": [0.474, 0.592, None],
-    "mAP@0.5:0.95": [0.244, 0.323, None],
-    "Vehicle AP": [0.745, 0.822, None],
-    "Person AP": [0.329, 0.463, None],
-    "Other AP": [0.349, 0.491, None],
-    "Inference (ms)": [0.8, 6.0, None],
-    "~FPS": [1250, 150, None],
-    "Params (M)": [3.2, 25.9, 32.0],
-    "Status": ["✅ Done", "✅ Done", "⏸ Paused"],
-}
-
-CLASS_NAMES = ["vehicle", "person", "static", "flying", "other"]
+CLASS_NAMES = ["vehicle", "person", "two_wheeler"]
 
 
 # ---------------------------------------------------------------------------
@@ -244,7 +231,7 @@ def find_available_weights():
 
 
 def run_inference_on_frame(model, frame: np.ndarray):
-    """Run detection + tracking + avoidance on a single frame."""
+    """Run detection on a single frame (tracking + risk added downstream)."""
     from src.detection.detector import Detection
 
     results = model(frame, verbose=False)[0]
@@ -262,16 +249,16 @@ def run_inference_on_frame(model, frame: np.ndarray):
     return detections, results
 
 
-def draw_detections_on_frame(frame: np.ndarray, detections, avoidance_cmd=None):
+def draw_detections_on_frame(frame: np.ndarray, detections, risked_tracks=None):
     """Draw bounding boxes and labels on frame (web-friendly colors)."""
     out = frame.copy()
-    # Color palette for classes
+    # Color palette (cycles by class_id; first three match the 3 coarse classes)
     colors = [
         (78, 126, 234),  # vehicle - blue
         (162, 75, 118),  # person - purple
-        (45, 183, 147),  # static - teal
-        (234, 166, 78),  # flying - orange
-        (150, 150, 180),  # other - grey
+        (45, 183, 147),  # two_wheeler - teal
+        (234, 166, 78),  # (cycle) - orange
+        (150, 150, 180),  # (cycle) - grey
     ]
     for d in detections:
         x1, y1, x2, y2 = [int(v) for v in d.bbox]
@@ -293,9 +280,9 @@ def draw_detections_on_frame(frame: np.ndarray, detections, avoidance_cmd=None):
             cv2.LINE_AA,
         )
 
-    if avoidance_cmd:
-        yaw, alt = avoidance_cmd
-        cmd_text = f"CMD -> Yaw: {yaw:+.1f}  Alt: {alt:+.1f}"
+    if risked_tracks and isinstance(risked_tracks, list) and risked_tracks:
+        danger_n = sum(1 for r in risked_tracks if getattr(r, "risk", None) == "DANGER")
+        cmd_text = f"Risk tracks: {len(risked_tracks)}  DANGER: {danger_n}"
         cv2.putText(
             out,
             cmd_text,
@@ -313,8 +300,8 @@ def draw_detections_on_frame(frame: np.ndarray, detections, avoidance_cmd=None):
 # Sidebar navigation
 # ---------------------------------------------------------------------------
 with st.sidebar:
-    st.markdown("# 🛸 CPV301")
-    st.markdown("### Drone Obstacle Avoidance")
+    st.markdown("# 🚗 CPV301")
+    st.markdown("### Vehicle Pedestrian & Vehicle Avoidance")
     st.markdown("---")
 
     page = st.radio(
@@ -327,7 +314,7 @@ with st.sidebar:
     st.markdown(
         """
     <div style="color: #666; font-size: 0.8rem; text-align: center;">
-        <b>RT-DR-003</b><br>
+        <b>Risk-Advisory Perception</b><br>
         FPT University — CPV301<br>
         Computer Vision Course Project
     </div>
@@ -343,10 +330,10 @@ if page == "🏠 Overview":
     # Hero
     st.markdown(
         """
-    <div class="hero-title">Drone Obstacle Avoidance</div>
+    <div class="hero-title">Vehicle Pedestrian & Vehicle Avoidance</div>
     <div class="hero-sub">
-        How can drones avoid dynamic obstacles during flight?<br>
-        A three-stage Computer Vision pipeline: <b>Detection → Tracking → Avoidance Planning</b>
+        How can vehicles avoid pedestrians and vehicles?<br>
+        A three-stage Computer Vision pipeline: <b>Detection → Tracking → Risk Assessment</b>
     </div>
     """,
         unsafe_allow_html=True,
@@ -357,23 +344,23 @@ if page == "🏠 Overview":
     with col1:
         st.markdown(
             """<div class="metric-card">
-            <div class="metric-value">59.2%</div>
-            <div class="metric-label">Best mAP@0.5</div>
+            <div class="metric-value">3</div>
+            <div class="metric-label">Risk Levels</div>
         </div>""",
             unsafe_allow_html=True,
         )
     with col2:
         st.markdown(
             """<div class="metric-card">
-            <div class="metric-value">150+</div>
-            <div class="metric-label">FPS (YOLOv8m)</div>
+            <div class="metric-value">BDD100K</div>
+            <div class="metric-label">Primary Dataset</div>
         </div>""",
             unsafe_allow_html=True,
         )
     with col3:
         st.markdown(
             """<div class="metric-card">
-            <div class="metric-value">5</div>
+            <div class="metric-value">3</div>
             <div class="metric-label">Object Classes</div>
         </div>""",
             unsafe_allow_html=True,
@@ -381,8 +368,8 @@ if page == "🏠 Overview":
     with col4:
         st.markdown(
             """<div class="metric-card">
-            <div class="metric-value">8,629</div>
-            <div class="metric-label">Training Images</div>
+            <div class="metric-value">KITTI</div>
+            <div class="metric-label">Cross-Dataset Test</div>
         </div>""",
             unsafe_allow_html=True,
         )
@@ -415,9 +402,10 @@ if page == "🏠 Overview":
             with Hungarian/IoU data association → List[Track] with track_id, bbox, velocity, age</p>
         </div>
         <div class="pipeline-step">
-            <h4>🎯 4. Avoidance — GeometricPlanner</h4>
-            <p>Projects each track's future position by time_horizon using velocity. Applies repulsive force
-            if within safe_distance of frame center → (yaw_delta, altitude_delta) command</p>
+            <h4>🎯 4. Risk — RiskZoneAssessor</h4>
+            <p>Projects an ego-path trapezoid (narrow at horizon, wide at frame bottom). An object is
+            in-path if its bbox bottom-center falls inside it and closing if its bbox area is large or
+            growing → tags each track SAFE / CAUTION / DANGER</p>
         </div>
         """,
             unsafe_allow_html=True,
@@ -433,23 +421,22 @@ if page == "🏠 Overview":
 
   → BaseTracker.update()
       → List[Track]
-        (track_id, bbox, velocity, age)
+        (track_id, bbox, velocity, scale_velocity)
 
-  → BaseAvoidancePlanner.plan()
-      → (yaw_delta, altitude_delta)""",
+  → BaseRiskAssessor.assess()
+      → List[RiskedTrack]
+        (SAFE / CAUTION / DANGER)""",
             language="text",
         )
 
-        st.markdown("##### Class Scheme (5 coarse classes)")
+        st.markdown("##### Class Scheme (3 coarse classes)")
         class_data = pd.DataFrame(
             {
-                "Class": ["vehicle", "person", "static", "flying", "other"],
-                "Source": [
-                    "car, van, truck, bus",
-                    "pedestrian, people",
-                    "reserved (AirSim)",
-                    "reserved (Bird-vs-Drone)",
-                    "bicycle, tricycle, motor",
+                "Class": ["vehicle", "person", "two_wheeler"],
+                "Source (BDD100K)": [
+                    "car, truck, bus, train",
+                    "pedestrian, rider",
+                    "bicycle, motorcycle",
                 ],
             }
         )
@@ -489,7 +476,7 @@ if page == "🏠 Overview":
         st.markdown(
             """<div class="metric-card">
             <div class="metric-value" style="font-size:1.6rem;">📊</div>
-            <div class="metric-label">VisDrone Dataset</div>
+            <div class="metric-label">BDD100K Dataset</div>
         </div>""",
             unsafe_allow_html=True,
         )
@@ -504,194 +491,41 @@ elif page == "📊 Training Results":
         unsafe_allow_html=True,
     )
     st.markdown(
-        '<div class="hero-sub">Phase 6 — YOLOv8n & YOLOv8m trained on VisDrone-DET (5 classes) · 50 epochs · Nvidia L4 GPU</div>',
+        '<div class="hero-sub">Model comparison on BDD100K — pending training (Plans 2-3)</div>',
         unsafe_allow_html=True,
     )
 
-    # Summary metrics
-    col1, col2, col3, col4 = st.columns(4)
-    with col1:
-        st.markdown(
-            """<div class="metric-card">
-            <div class="metric-value">59.2%</div>
-            <div class="metric-label">Best mAP@0.5 (YOLOv8m)</div>
-        </div>""",
-            unsafe_allow_html=True,
-        )
-    with col2:
-        st.markdown(
-            """<div class="metric-card">
-            <div class="metric-value">32.3%</div>
-            <div class="metric-label">Best mAP@0.5:0.95</div>
-        </div>""",
-            unsafe_allow_html=True,
-        )
-    with col3:
-        st.markdown(
-            """<div class="metric-card">
-            <div class="metric-value">+25%</div>
-            <div class="metric-label">mAP Gain (n→m)</div>
-        </div>""",
-            unsafe_allow_html=True,
-        )
-    with col4:
-        st.markdown(
-            """<div class="metric-card">
-            <div class="metric-value">2/3</div>
-            <div class="metric-label">Models Trained</div>
-        </div>""",
-            unsafe_allow_html=True,
-        )
-
-    st.markdown("")
-
-    # Model comparison table
-    st.markdown(
-        '<div class="section-header">📊 Model Comparison</div>', unsafe_allow_html=True
+    st.info(
+        "🔧 **Pending.** The project pivoted to vehicle pedestrian/vehicle "
+        "avoidance on **BDD100K**. The 3-model comparison "
+        "(YOLOv8n / YOLOv8m / RT-DETR-L) is retrained on BDD100K in the data "
+        "pipeline (Plan 2) and training/evaluation phase (Plan 3). Results — "
+        "mAP@0.5, per-class AP, FPS, plus the **KITTI cross-dataset "
+        "generalization** and **day/night robustness** findings — populate "
+        "this dashboard once those runs complete."
     )
 
-    df = pd.DataFrame(TRAINING_RESULTS)
-    # Style the dataframe
-    st.dataframe(
-        df.style.format(
-            {
-                "mAP@0.5": lambda x: f"{x:.1%}" if x is not None else "—",
-                "mAP@0.5:0.95": lambda x: f"{x:.1%}" if x is not None else "—",
-                "Vehicle AP": lambda x: f"{x:.1%}" if x is not None else "—",
-                "Person AP": lambda x: f"{x:.1%}" if x is not None else "—",
-                "Other AP": lambda x: f"{x:.1%}" if x is not None else "—",
-                "Inference (ms)": lambda x: f"{x:.1f}" if x is not None else "—",
-                "~FPS": lambda x: f"{x:,.0f}" if x is not None else "—",
-                "Params (M)": lambda x: f"{x:.1f}" if x is not None else "—",
-            }
-        ).apply(
-            lambda row: [
-                (
-                    "background-color: rgba(102,126,234,0.1)"
-                    if row["Status"] == "✅ Done"
-                    else ""
-                )
-            ]
-            * len(row),
-            axis=1,
-        ),
-        use_container_width=True,
-        hide_index=True,
-    )
-
-    st.markdown("")
-
-    # Charts
     st.markdown(
-        '<div class="section-header">📈 Detailed Analysis</div>', unsafe_allow_html=True
-    )
-
-    tab1, tab2, tab3 = st.tabs(["mAP Comparison", "Per-Class AP", "Speed vs Accuracy"])
-
-    with tab1:
-        chart_data = pd.DataFrame(
-            {
-                "Model": ["YOLOv8n", "YOLOv8m"],
-                "mAP@0.5": [47.4, 59.2],
-                "mAP@0.5:0.95": [24.4, 32.3],
-            }
-        )
-        st.bar_chart(chart_data.set_index("Model"), color=["#667eea", "#764ba2"])
-
-        st.markdown("""
-        > **Key Finding:** Scaling from YOLOv8n (3.2M params) to YOLOv8m (25.9M params) yields
-        > a **+11.8 pp** gain in mAP@0.5 — demonstrating that model capacity significantly
-        > helps on the VisDrone drone-perspective data with its small, dense objects.
-        """)
-
-    with tab2:
-        per_class = pd.DataFrame(
-            {
-                "Class": ["Vehicle", "Person", "Other"],
-                "YOLOv8n": [74.5, 32.9, 34.9],
-                "YOLOv8m": [82.2, 46.3, 49.1],
-            }
-        )
-        st.bar_chart(per_class.set_index("Class"), color=["#667eea", "#764ba2"])
-
-        st.markdown("""
-        > **Per-class insights:**
-        > - **Vehicle** is the easiest class (74-82% AP) — large, frequent, and distinctive
-        > - **Person** benefits most from scale (+13.4 pp) — small objects need deeper features
-        > - **Other** (bicycle, tricycle, motor) also improves significantly (+14.2 pp)
-        """)
-
-    with tab3:
-        speed_data = pd.DataFrame(
-            {
-                "Model": ["YOLOv8n", "YOLOv8m", "RT-DETR-L (est.)"],
-                "mAP@0.5 (%)": [47.4, 59.2, 65.0],
-                "FPS": [1250, 150, 30],
-                "Params (M)": [3.2, 25.9, 32.0],
-            }
-        )
-        st.scatter_chart(
-            speed_data,
-            x="FPS",
-            y="mAP@0.5 (%)",
-            size="Params (M)",
-            color="Model",
-        )
-
-        st.markdown("""
-        > **Speed vs Accuracy tradeoff:**
-        > - YOLOv8n is extremely fast but sacrifices accuracy
-        > - YOLOv8m hits the sweet spot for our FPS≥30 requirement
-        > - RT-DETR-L (estimated) pushes accuracy further but at ~30 FPS limit
-        >
-        > **Selection rule:** highest mAP@0.5 subject to FPS ≥ 30 → **YOLOv8m wins**
-        """)
-
-    # Training details
-    st.markdown(
-        '<div class="section-header">⚙️ Training Configuration</div>',
+        '<div class="section-header">📊 Planned Model Lineup</div>',
         unsafe_allow_html=True,
     )
-
-    c1, c2 = st.columns(2)
-    with c1:
-        st.markdown("##### Hyperparameters")
-        config_data = pd.DataFrame(
-            {
-                "Parameter": [
-                    "Dataset",
-                    "Classes",
-                    "Image Size",
-                    "Epochs",
-                    "Optimizer",
-                    "Seed",
-                    "Split",
-                    "GPU",
-                ],
-                "Value": [
-                    "VisDrone-DET",
-                    "5 (vehicle, person, static, flying, other)",
-                    "640 × 640",
-                    "50",
-                    "SGD (Ultralytics default)",
-                    "42",
-                    "70 / 15 / 15 stratified",
-                    "Nvidia L4 (24 GB)",
-                ],
-            }
-        )
-        st.dataframe(config_data, use_container_width=True, hide_index=True)
-
-    with c2:
-        st.markdown("##### Batch Sizes (tuned for L4 24 GB)")
-        batch_data = pd.DataFrame(
-            {
-                "Model": ["YOLOv8n", "YOLOv8m", "RT-DETR-L"],
-                "Batch Size": [128, 64, 20],
-                "~VRAM Usage": ["~8 GB", "~16 GB", "~22 GB"],
-            }
-        )
-        st.dataframe(batch_data, use_container_width=True, hide_index=True)
+    lineup = pd.DataFrame(
+        {
+            "Model": ["YOLOv8n", "YOLOv8m", "RT-DETR-L"],
+            "Role": [
+                "Speed baseline / embedded floor",
+                "Primary R4 demo model",
+                "Accuracy ceiling / architecture contrast",
+            ],
+            "Axis": [
+                "capacity (n→m)",
+                "capacity / arch pivot",
+                "architecture (CNN→transformer)",
+            ],
+            "Status": ["⬜ Pending", "⬜ Pending", "⬜ Pending"],
+        }
+    )
+    st.dataframe(lineup, use_container_width=True, hide_index=True)
 
 
 # ===================================================================
@@ -773,19 +607,20 @@ elif page == "🎯 Live Demo":
                         # Try running full pipeline
                         try:
                             from src.tracking.kalman_tracker import KalmanTracker
-                            from src.avoidance.geometric_planner import GeometricPlanner
+                            from src.risk.zone_assessor import RiskZoneAssessor
 
                             h, w = img.shape[:2]
                             tracker = KalmanTracker(min_hits=1)
-                            planner = GeometricPlanner(frame_width=w, frame_height=h)
+                            assessor = RiskZoneAssessor()
                             tracks = tracker.update(detections)
-                            avoidance_cmd = planner.plan(tracks)
+                            risked = assessor.assess(tracks, frame_shape=(h, w))
+                            risked_tracks = risked
                         except Exception:
-                            avoidance_cmd = None
+                            risked_tracks = None
 
                         # Draw results
                         annotated = draw_detections_on_frame(
-                            img, detections, avoidance_cmd
+                            img, detections, risked_tracks
                         )
                         annotated_rgb = cv2.cvtColor(annotated, cv2.COLOR_BGR2RGB)
 
@@ -798,7 +633,7 @@ elif page == "🎯 Live Demo":
                                 use_container_width=True,
                             )
                         with col_det:
-                            st.markdown("##### Detection + Tracking + Avoidance")
+                            st.markdown("##### Detection + Tracking + Risk")
                             st.image(annotated_rgb, use_container_width=True)
 
                         # Stats
@@ -807,17 +642,18 @@ elif page == "🎯 Live Demo":
                         with sc1:
                             st.metric("Objects Detected", len(detections))
                         with sc2:
-                            if avoidance_cmd:
-                                st.metric("Yaw Command", f"{avoidance_cmd[0]:+.1f}°")
-                            else:
-                                st.metric("Yaw Command", "N/A")
+                            n_tracks = len(risked_tracks) if risked_tracks else 0
+                            st.metric("Tracks", n_tracks)
                         with sc3:
-                            if avoidance_cmd:
-                                st.metric(
-                                    "Altitude Command", f"{avoidance_cmd[1]:+.1f}"
+                            if risked_tracks:
+                                danger_count = sum(
+                                    1
+                                    for r in risked_tracks
+                                    if getattr(r, "risk", None) == "DANGER"
                                 )
+                                st.metric("DANGER tracks", danger_count)
                             else:
-                                st.metric("Altitude Command", "N/A")
+                                st.metric("DANGER tracks", "N/A")
 
                         # Detection details
                         if detections:
@@ -889,14 +725,10 @@ elif page == "🎯 Live Demo":
                         if st.button("▶️ Run Detection", type="primary"):
                             try:
                                 from src.tracking.kalman_tracker import KalmanTracker
-                                from src.avoidance.geometric_planner import (
-                                    GeometricPlanner,
-                                )
+                                from src.risk.zone_assessor import RiskZoneAssessor
 
                                 tracker_v = KalmanTracker()
-                                planner_v = GeometricPlanner(
-                                    frame_width=w_vid, frame_height=h_vid
-                                )
+                                assessor_v = RiskZoneAssessor()
                                 use_full_pipeline = True
                             except Exception:
                                 use_full_pipeline = False
@@ -923,13 +755,16 @@ elif page == "🎯 Live Demo":
 
                                 dets, _ = run_inference_on_frame(model_v, frame)
 
-                                avoidance_c = None
+                                risked_v = None
                                 if use_full_pipeline:
                                     tracks_v = tracker_v.update(dets)
-                                    avoidance_c = planner_v.plan(tracks_v)
+                                    risked_v = assessor_v.assess(
+                                        tracks_v,
+                                        frame_shape=(h_vid, w_vid),
+                                    )
 
                                 annotated_v = draw_detections_on_frame(
-                                    frame, dets, avoidance_c
+                                    frame, dets, risked_v
                                 )
                                 out_writer.write(annotated_v)
                                 frame_count += 1
@@ -958,60 +793,40 @@ elif page == "📋 Pipeline Status":
         unsafe_allow_html=True,
     )
     st.markdown(
-        '<div class="hero-sub">Project progress tracker — RT-DR-003 Drone Obstacle Avoidance</div>',
+        '<div class="hero-sub">Project progress — Vehicle Pedestrian & Vehicle Avoidance pivot</div>',
         unsafe_allow_html=True,
     )
 
-    # Status overview
     phases = [
-        ("Phase 0 — Environment", "✅", "done", "venv + requirements.txt configured"),
         (
-            "Phase 1 — Raw Data",
+            "Cleanup — drone artifacts removed",
             "✅",
             "done",
-            "VisDrone-DET: 8,629 labeled images (YOLO-format)",
+            "Removed VisDrone data, drone demo videos, drone configs; git gc reclaimed ~3.3 GB",
         ),
         (
-            "Phase 2 — Validate Raw",
+            "Design spec",
             "✅",
             "done",
-            "All splits PASS; fixed 1 zero-height bbox in train",
+            "Dashcam risk-advisory on BDD100K (3 classes) + KITTI hold-out; approved & committed",
         ),
         (
-            "Phase 3 — Preprocess",
+            "Plan 1 — Risk-assessor code pivot",
             "✅",
             "done",
-            "10→5 class remap; 6040/1294/1295 stratified split",
+            "src/avoidance → src/risk (RiskZoneAssessor); detect→track→risk wired; 26/26 tests",
         ),
         (
-            "Phase 4 — Configs",
-            "✅",
-            "done",
-            "visdrone5.yaml + yolov8n/m/rtdetr.yaml; tuned for L4 24 GB",
-        ),
-        (
-            "Phase 5 — Sanity Run",
-            "✅",
-            "done",
-            "YOLOv8n 100 epochs on Modal L4; mAP@0.5 = 47.4% — pipeline healthy",
-        ),
-        (
-            "Phase 6 — Full Training",
-            "🔄",
-            "progress",
-            "YOLOv8n ✅ (47.4%) · YOLOv8m ✅ (59.2%) · RT-DETR-L ⏸ paused (VRAM constraints)",
-        ),
-        (
-            "Phase 7 — Evaluation",
+            "Plan 2 — BDD100K data pipeline",
             "⬜",
             "pending",
-            "scripts/evaluate.py ready; awaiting Phase 6 completion",
+            "Download, JSON→YOLO conversion, 3-class remap, stratified split, KITTI prep",
         ),
         (
-            "Phase 8 — Integration",
+            "Plan 3 — Training + eval + docs",
             "⬜",
             "pending",
-            "Wire best.pt into main.py + AirSim closed-loop demo for R4",
+            "3-model comparison on BDD100K, KITTI generalization, risk validation, Streamlit re-skin",
         ),
     ]
 
@@ -1038,33 +853,12 @@ elif page == "📋 Pipeline Status":
         {
             "Round": ["R1", "R2", "R3", "R4"],
             "Content": [
-                "Phases 0-4 designed, data validation report",
-                "Phases 0-5 executed, one model trained (YOLOv8n)",
-                "Phases 6-7, full 3-model comparison table",
-                "Phase 8, live demo with best model",
+                "Problem statement + design + BDD100K data-validation report",
+                "Preprocess + YOLOv8n trained on BDD100K + initial risk-overlay demo",
+                "3-model comparison + KITTI generalization + risk validation + day/night robustness",
+                "Best model wired into live dashcam demo + end-to-end FPS + Streamlit showcase",
             ],
-            "Status": ["✅ Submitted", "✅ Submitted", "🔄 In Progress", "⬜ Upcoming"],
+            "Status": ["🔄 In Progress", "⬜ Upcoming", "⬜ Upcoming", "⬜ Upcoming"],
         }
     )
     st.dataframe(round_data, use_container_width=True, hide_index=True)
-
-    # Open issues
-    st.markdown(
-        '<div class="section-header">⚠️ Open Issues</div>', unsafe_allow_html=True
-    )
-
-    st.markdown(
-        """
-    <div class="pipeline-step">
-        <h4>🔴 RT-DETR-L Training Paused</h4>
-        <p>VRAM constraints at batch=4 on L4 (24 GB). Needs L40S/A100 to run at batch=16.
-        Options: reduce batch further, use gradient accumulation, or switch to A100 instance.</p>
-    </div>
-    <div class="pipeline-step">
-        <h4>🟡 Weights Download</h4>
-        <p>Trained weights are stored on Modal volume <code>cpv-data</code>. Need to fetch locally
-        for web demo: <code>modal run modal_train.py::fetch --model yolov8m</code></p>
-    </div>
-    """,
-        unsafe_allow_html=True,
-    )

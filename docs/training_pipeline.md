@@ -121,18 +121,22 @@ modal setup
 ### 4.2 Upload the dataset (one-time)
 
 Tar the processed data first — a single archive is far faster to upload than
-~80,000 individual files:
+~80,000 individual files. **Use `-h`** so the symlinked images under
+`data/processed/bdd100k/*/images` are dereferenced into the archive (a plain
+`tar` would store dangling symlinks that don't resolve inside the container):
 
 ```bash
-tar czf processed.tar.gz -C data processed
+tar czhf processed.tar.gz -C data processed
 modal volume create cpv-bdd100k
 modal volume put cpv-bdd100k processed.tar.gz /processed.tar.gz
-modal run modal_train.py::extract_dataset
 rm processed.tar.gz   # optional local cleanup
 ```
 
-After extraction the dataset is available inside the Modal container at
-`/vol/processed/bdd100k`.
+The archive stays in the volume as a single file. Each training run unpacks it
+to fast **local** container disk (`/root/data/processed/bdd100k`) on first use —
+Modal Volumes are a network filesystem and far too slow for YOLO's per-epoch
+reads of ~80k small images (the unpack alone times out against the volume). No
+separate extract step is needed.
 
 **GOTCHA — `--data-root` must point at the BDD100K directory, not its parent.**
 `scripts/train.py` accepts `--data-root` to override the `path:` field in the
@@ -400,11 +404,10 @@ python scripts/preprocess.py
 python scripts/validate_data.py --images data/processed/bdd100k/train/images \
     --labels data/processed/bdd100k/train/labels --num-classes 3
 
-# Upload dataset to Modal (one-time)
-tar czf processed.tar.gz -C data processed
+# Upload dataset to Modal (one-time; -h dereferences the symlinked images)
+tar czhf processed.tar.gz -C data processed
 modal volume create cpv-bdd100k
 modal volume put cpv-bdd100k processed.tar.gz /processed.tar.gz
-modal run modal_train.py::extract_dataset
 
 # Sanity training run
 modal run modal_train.py::main --model yolov8n --epochs 5

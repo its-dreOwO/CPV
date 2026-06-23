@@ -6,13 +6,15 @@ Quick start
        pip install modal
        modal setup
 
-2. Upload the dataset — tar first so it's one file, not ~80k (one-time):
-       tar czf processed.tar.gz -C data processed
+2. Upload the dataset — tar first so it's one file, not ~80k (one-time).
+   Use -h so the symlinked images are dereferenced into the archive:
+       tar czhf processed.tar.gz -C data processed
        modal volume create cpv-bdd100k
        modal volume put cpv-bdd100k processed.tar.gz /processed.tar.gz
-       modal run modal_train.py::extract_dataset
        rm processed.tar.gz   # optional cleanup
-   After extraction the dataset is at /vol/processed/bdd100k.
+   The archive stays in the volume as one file; each train run unpacks it to
+   fast local disk (Modal Volumes are too slow for YOLO's per-epoch reads of
+   ~80k small files). No separate extract step is needed.
 
 3. Sanity check — 5 epochs on YOLOv8n (~15 min, ~$0.15 on L4):
        modal run modal_train.py::main --model yolov8n --epochs 5
@@ -42,7 +44,10 @@ import modal
 APP_NAME = "cpv-vehicle-perception"
 VOLUME_NAME = "cpv-bdd100k"
 VOLUME_PATH = Path("/vol")
-# Dataset is extracted to /vol/processed/bdd100k (the dir holding train/ val/ test/).
+# The volume stores the single dataset archive (/vol/processed.tar.gz); each
+# train run unpacks it to fast local disk here (the dir holding processed/…).
+LOCAL_DATASET_ROOT = Path("/root/data")
+# Within either root, the dataset lives under processed/bdd100k (train/ val/ test/).
 DATASET_SUBDIR = "processed/bdd100k"
 
 
@@ -99,15 +104,28 @@ _VALID_MODELS = ("yolov8n", "yolov8m", "rtdetr")
 def train(model: str, epochs: int, fresh: bool = False) -> None:
     import os
     import shutil
+    import tarfile
 
-    dataset_path = VOLUME_PATH / DATASET_SUBDIR
+    # Extract the dataset from the volume archive to fast local container disk.
+    # YOLO re-reads every image each epoch; a Modal Volume (network filesystem,
+    # tuned for few large files) is far too slow for ~80k small-file reads x50
+    # epochs and even times out on the initial unpack. Unpacking the single
+    # tar.gz to ephemeral local NVMe once per run (~1-2 min) sidesteps both.
+    dataset_path = LOCAL_DATASET_ROOT / DATASET_SUBDIR
     if not dataset_path.exists():
-        raise RuntimeError(
-            "Dataset not found in volume. Run:\n"
-            "  tar czf processed.tar.gz -C data processed\n"
-            f"  modal volume put {VOLUME_NAME} processed.tar.gz /processed.tar.gz\n"
-            "  modal run modal_train.py::extract_dataset"
-        )
+        archive = VOLUME_PATH / "processed.tar.gz"
+        if not archive.exists():
+            raise RuntimeError(
+                f"Dataset archive {archive} not found in volume. Upload it:\n"
+                "  tar czhf processed.tar.gz -C data processed  # -h derefs symlinks\n"
+                f"  modal volume put {VOLUME_NAME} processed.tar.gz /processed.tar.gz"
+            )
+        print(f"Extracting {archive} -> {LOCAL_DATASET_ROOT} (local disk)…")
+        LOCAL_DATASET_ROOT.mkdir(parents=True, exist_ok=True)
+        with tarfile.open(archive) as tar:
+            tar.extractall(path=LOCAL_DATASET_ROOT)
+        n = sum(1 for p in dataset_path.rglob("*") if p.is_file())
+        print(f"Extracted {n} files to {dataset_path}")
 
     run_dir = VOLUME_PATH / "runs"
     run_dir.mkdir(parents=True, exist_ok=True)
@@ -159,30 +177,6 @@ def gpu_info() -> None:
         ],
         check=True,
     )
-
-
-@app.function(
-    image=modal.Image.debian_slim(python_version="3.11"),
-    volumes={VOLUME_PATH: volume},
-    timeout=10 * 60,
-)
-def extract_dataset() -> None:
-    """Extract /vol/processed.tar.gz → /vol/processed/ inside the volume."""
-    import tarfile
-
-    archive = VOLUME_PATH / "processed.tar.gz"
-    if not archive.exists():
-        raise RuntimeError(
-            f"{archive} not found. Upload it first:\n"
-            "  tar czf processed.tar.gz -C data processed\n"
-            f"  modal volume put {VOLUME_NAME} processed.tar.gz /processed.tar.gz"
-        )
-    print(f"Extracting {archive} …")
-    with tarfile.open(archive) as tar:
-        tar.extractall(path=VOLUME_PATH)
-    n = sum(1 for p in (VOLUME_PATH / "processed").rglob("*") if p.is_file())
-    print(f"Done — {n} files extracted to {VOLUME_PATH / 'processed'}")
-    volume.commit()
 
 
 @app.local_entrypoint()

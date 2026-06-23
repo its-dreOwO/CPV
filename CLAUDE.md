@@ -117,7 +117,8 @@ The pivot is mid-implementation. Old drone training results (VisDrone) are **sup
 | Plan 1 — risk-assessor code pivot (`src/risk/`) | ✅ done |
 | Plan 2 — BDD100K data pipeline (download, JSON→YOLO, 3-class remap) | ✅ done |
 | Plan 3 — training/eval/risk-validation scripts + docs/Streamlit rewrite | ✅ code done |
-| Plan 3 — actual GPU training runs (3 models on Modal L4) + KITTI download/eval | ⬜ operator-pending |
+| Plan 3 — GPU training runs (3 models) | 🔄 in progress — yolov8n + yolov10n on Modal (detached), yolov8m on a free GCP T4 VM; see `docs/superpowers/plans/2026-06-23-HANDOFF.md` |
+| Plan 3 — fetch/verify weights + BDD100K/KITTI eval + risk validation + final review | ⬜ operator-pending (handoff has exact commands) |
 
 ## R-round mapping
 

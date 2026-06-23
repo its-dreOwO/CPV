@@ -146,6 +146,18 @@ def test_collect_frames_pairs_existing_images(tmp_path):
     assert {p.name for p, _ in pairs} == {"a.jpg", "b.jpg"}
 
 
+def test_collect_frames_pairs_images_in_nested_shards(tmp_path):
+    imgs, js = _raw_tree(tmp_path)
+    shard = imgs / "trainA"
+    shard.mkdir()
+    (imgs / "a.jpg").rename(shard / "a.jpg")
+
+    pairs = collect_frames(imgs, js)
+
+    assert {p.name for p, _ in pairs} == {"a.jpg", "b.jpg"}
+    assert next(p for p, fl in pairs if fl.name == "a.jpg") == shard / "a.jpg"
+
+
 def test_collect_frames_skips_missing_image(tmp_path):
     imgs, js = _raw_tree(tmp_path)
     (imgs / "b.jpg").unlink()

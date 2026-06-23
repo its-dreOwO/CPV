@@ -126,12 +126,13 @@ Pair = Tuple[Path, FrameLabels]
 def collect_frames(images_dir: Path, labels_json: Path) -> List[Pair]:
     """Return ``(image_path, FrameLabels)`` for every JSON frame whose image
     exists under ``images_dir``. Frames with no matching image are skipped."""
+    image_index = {path.name: path for path in Path(images_dir).rglob("*.jpg")}
     pairs: List[Pair] = []
     missing = 0
     for entry in load_bdd_json(labels_json):
         fl = convert_frame(entry)
-        img_path = images_dir / fl.name
-        if not img_path.exists():
+        img_path = image_index.get(fl.name)
+        if img_path is None:
             missing += 1
             continue
         pairs.append((img_path, fl))

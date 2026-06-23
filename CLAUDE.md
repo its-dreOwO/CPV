@@ -33,9 +33,11 @@ python main.py --source path/to/dashcam.mp4 --weights models/best.pt --device cu
 # Streamlit showcase prototype (run from repo root so `src.*` imports resolve)
 streamlit run prototype/web_app.py
 
-# Data pipeline (BDD100K) — scripts are being adapted from VisDrone in Plan 2
-python scripts/validate_data.py --images data/raw/bdd100k/images --labels data/raw/bdd100k/labels --num-classes 3
-python scripts/preprocess.py     # BDD100K JSON -> YOLO, 10 -> 3 class remap, stratified split -> data/processed/
+# Data pipeline (BDD100K) — JSON -> YOLO, 10 -> 3 class remap, stratified split
+python scripts/preprocess.py
+python scripts/validate_data.py --images data/processed/bdd100k/train/images --labels data/processed/bdd100k/train/labels --num-classes 3
+python scripts/validate_data.py --images data/processed/bdd100k/val/images --labels data/processed/bdd100k/val/labels --num-classes 3
+python scripts/validate_data.py --images data/processed/bdd100k/test/images --labels data/processed/bdd100k/test/labels --num-classes 3
 
 # Train / evaluate (sanity: --epochs 5; full: --epochs 50)
 python scripts/train.py --config configs/yolov8m.yaml --epochs 50 --device cuda
@@ -80,7 +82,7 @@ frame (dashcam, monocular np.ndarray)
 
 `main.py` wires these together for the live demo and overlays the ego-path region + color-coded risk boxes. `prototype/web_app.py` is a Streamlit showcase app reusing the same `src.*` pipeline classes; it inserts the repo root onto `sys.path` so `from src.*` resolves and reads its theme from the repo-root `.streamlit/config.toml` — always launch it from the repo root. `scripts/train.py` loads a model config YAML and calls `ultralytics.YOLO.train()`. `scripts/preprocess.py` does the class remap + stratified split; `scripts/validate_data.py` runs pre-training integrity checks (helpers in `src/utils/data_validation.py`).
 
-> The `src/risk/` package replaces the former `src/avoidance/` (the word "avoidance" implied a control loop). `scripts/preprocess.py`, `validate_data.py`, `train.py`, `evaluate.py`, and `modal_train.py` are still VisDrone/drone-shaped and are adapted for BDD100K in Plans 2–3.
+> The `src/risk/` package replaces the former `src/avoidance/` (the word "avoidance" implied a control loop). `validate_data.py`, `train.py`, `evaluate.py`, and `modal_train.py` still need Plan 3 cleanup for the vehicle pipeline.
 
 **Import style:** modules import from `src.*` (absolute), so always run pytest/scripts from the repo root.
 
@@ -102,7 +104,7 @@ Two controlled axes — capacity (n -> m) and architecture (m -> RT-DETR-L) — 
 
 **Locked decisions:** image size 640x640, epochs 50 (full) / 5 (sanity), seed = 42 everywhere, 70/15/15 stratified split, selection rule **highest mAP@0.5 subject to FPS >= 30**. Compute target: Nvidia L4 (24 GB); RT-DETR-L needs L40S/A100 for batch=16.
 
-## Pipeline status (as of 2026-06-22)
+## Pipeline status (as of 2026-06-23)
 
 The pivot is mid-implementation. Old drone training results (VisDrone) are **superseded** and the VisDrone data/weights were removed in the cleanup.
 
@@ -110,9 +112,9 @@ The pivot is mid-implementation. Old drone training results (VisDrone) are **sup
 |-------|--------|
 | Cleanup (drone artifacts, git gc) | ✅ done |
 | Design spec | ✅ approved + committed |
-| Plan 1 — risk-assessor code pivot (`src/risk/`) | 🔄 executing (TDD, no dataset/GPU needed) |
-| Plan 2 — BDD100K data pipeline (download, JSON→YOLO, 3-class remap, KITTI prep) | ⬜ next |
-| Plan 3 — training (3 models on BDD100K) + KITTI eval + docs/Streamlit rewrite | ⬜ |
+| Plan 1 — risk-assessor code pivot (`src/risk/`) | ✅ done |
+| Plan 2 — BDD100K data pipeline (download, JSON→YOLO, 3-class remap) | ✅ done |
+| Plan 3 — training (3 models on BDD100K) + KITTI eval + docs/Streamlit rewrite | ⬜ next |
 
 ## R-round mapping
 

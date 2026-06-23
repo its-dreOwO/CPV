@@ -18,9 +18,14 @@ Usage
 """
 
 import argparse
+import sys
 from pathlib import Path
 
-from src.utils.bdd100k import (
+# Ensure the repo root is on sys.path so `from src.*` imports work when this
+# script is run directly (python scripts/preprocess.py) rather than via -m.
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from src.utils.bdd100k import (  # noqa: E402
     collect_frames,
     stratified_train_val,
     write_attributes,

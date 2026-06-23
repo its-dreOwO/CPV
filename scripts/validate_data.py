@@ -20,7 +20,11 @@ import argparse
 import sys
 from pathlib import Path
 
-from src.utils.data_validation import (
+# Ensure the repo root is on sys.path so `from src.*` imports work when this
+# script is run directly (python scripts/validate_data.py) rather than via -m.
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from src.utils.data_validation import (  # noqa: E402
     ValidationReport,
     print_report,
     validate_dataset,

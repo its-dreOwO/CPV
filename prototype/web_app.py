@@ -1,10 +1,14 @@
 """
-CPV301 Vehicle Pedestrian & Vehicle Avoidance — Web Prototype
-=============================================================
-Streamlit app for project showcase:
+CPV301 Vehicle & Pedestrian Risk Advisory — Web Prototype
+=========================================================
+Streamlit showcase for the ADAS Forward-Collision-Warning perception system:
   1. Project overview & architecture
   2. Training results dashboard (model comparison)
-  3. Live demo (upload image/video → inference if weights available)
+  3. Live demo (upload image/video → detect → track → risk advisory overlay)
+
+Runs a monocular dashcam perception pipeline (detection → tracking → risk
+assessment). This is a perception + risk-reasoning system, NOT a vehicle
+control loop — no steering or braking output is produced.
 
 Run (from repo root):
     streamlit run prototype/web_app.py
@@ -28,7 +32,7 @@ import streamlit as st
 # Page config
 # ---------------------------------------------------------------------------
 st.set_page_config(
-    page_title="CPV301 — Vehicle Pedestrian & Vehicle Avoidance",
+    page_title="CPV301 — Vehicle & Pedestrian Risk Advisory (FCW)",
     page_icon="🚗",
     layout="wide",
     initial_sidebar_state="expanded",
@@ -201,72 +205,121 @@ button[data-baseweb="tab"] {
 CLASS_NAMES = ["vehicle", "person", "two_wheeler"]
 
 
-# ---------------------------------------------------------------------------
-# Helper: try to load YOLO model (if weights exist)
-# ---------------------------------------------------------------------------
-@st.cache_resource
-def load_model(weights_path: str):
-    """Load a YOLO model if the weights file exists."""
-    p = Path(weights_path)
-    if not p.exists():
-        return None
-    try:
-        from ultralytics import YOLO
-
-        return YOLO(str(p))
-    except Exception:
-        return None
-
-
 def find_available_weights():
-    """Scan for any .pt files in models/ or project root."""
+    """Scan for project-trained *-best.pt weights in models/, then any .pt fallback."""
     candidates = []
     models_dir = Path("models")
+    # Prefer our trained checkpoint names first
+    preferred = ["yolov8n-best.pt", "yolov8m-best.pt", "rtdetr-best.pt"]
     if models_dir.exists():
-        candidates.extend(models_dir.glob("*.pt"))
-    # Also check for default ultralytics weights in root
-    for p in Path(".").glob("*.pt"):
-        candidates.append(p)
-    return [str(p) for p in candidates]
+        for name in preferred:
+            p = models_dir / name
+            if p.exists():
+                candidates.append(str(p))
+        # Catch any other .pt in models/ not already listed
+        for p in sorted(models_dir.glob("*.pt")):
+            if str(p) not in candidates:
+                candidates.append(str(p))
+    # Also check for weights in project root
+    for p in sorted(Path(".").glob("*.pt")):
+        if str(p) not in candidates:
+            candidates.append(str(p))
+    return candidates
 
 
-def run_inference_on_frame(model, frame: np.ndarray):
-    """Run detection on a single frame (tracking + risk added downstream)."""
-    from src.detection.detector import Detection
+@st.cache_resource
+def load_yolo_detector(weights_path: str):
+    """Load a YoloDetector wrapping the given weights file."""
+    from src.detection.yolo_detector import YoloDetector
 
-    results = model(frame, verbose=False)[0]
-    detections = []
-    for box in results.boxes:
-        x1, y1, x2, y2 = box.xyxy[0].tolist()
-        conf = float(box.conf[0])
-        cls = int(box.cls[0])
-        name = results.names.get(cls, str(cls))
-        detections.append(
-            Detection(
-                bbox=[x1, y1, x2, y2], confidence=conf, class_id=cls, class_name=name
+    return YoloDetector(model_path=weights_path)
+
+
+def run_inference_on_frame(detector, frame: np.ndarray):
+    """Run YoloDetector detection on a single frame.
+
+    Returns List[Detection] using the real src pipeline interface.
+    """
+    detections = detector.detect(frame)
+    return detections
+
+
+def draw_pipeline_frame(
+    frame: np.ndarray,
+    detections,
+    risked_tracks=None,
+    ego_polygon=None,
+):
+    """Draw the full risk-advisory overlay on a frame.
+
+    When risked_tracks and ego_polygon are supplied (full pipeline), uses
+    src.utils.visualizer.draw_risk for the ego-path trapezoid + color-coded
+    SAFE/CAUTION/DANGER boxes.  Falls back to plain detection boxes when the
+    pipeline is unavailable (no weights / import failure).
+    """
+    from src.utils.visualizer import draw_risk
+
+    if risked_tracks is not None and ego_polygon is not None:
+        # Full pipeline overlay: ego-path trapezoid + risk-colored boxes
+        out = draw_risk(frame, risked_tracks, ego_polygon=ego_polygon)
+        # Overlay raw-detection confidence labels (thin, grey)
+        colors = [
+            (78, 126, 234),
+            (162, 75, 118),
+            (45, 183, 147),
+        ]
+        for d in detections:
+            x1, y1, x2, y2 = [int(v) for v in d.bbox]
+            color = colors[d.class_id % len(colors)]
+            label = f"{d.class_name} {d.confidence:.2f}"
+            (tw, th), _ = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.45, 1)
+            cv2.rectangle(out, (x1, y1 - th - 6), (x1 + tw + 2, y1), color, -1)
+            cv2.putText(
+                out,
+                label,
+                (x1 + 1, y1 - 3),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                0.45,
+                (255, 255, 255),
+                1,
+                cv2.LINE_AA,
             )
-        )
-    return detections, results
+        # HUD: risk summary
+        if risked_tracks:
+            danger_n = sum(
+                1 for r in risked_tracks if getattr(r, "risk", None) == "DANGER"
+            )
+            caution_n = sum(
+                1 for r in risked_tracks if getattr(r, "risk", None) == "CAUTION"
+            )
+            hud = (
+                f"DANGER:{danger_n}  CAUTION:{caution_n}"
+                f"  TRACKS:{len(risked_tracks)}"
+            )
+            cv2.putText(
+                out,
+                hud,
+                (10, 28),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                0.75,
+                (0, 100, 255),
+                2,
+                cv2.LINE_AA,
+            )
+        return out
 
-
-def draw_detections_on_frame(frame: np.ndarray, detections, risked_tracks=None):
-    """Draw bounding boxes and labels on frame (web-friendly colors)."""
+    # Fallback: plain detection boxes (no risk pipeline)
     out = frame.copy()
-    # Color palette (cycles by class_id; first three match the 3 coarse classes)
     colors = [
-        (78, 126, 234),  # vehicle - blue
-        (162, 75, 118),  # person - purple
-        (45, 183, 147),  # two_wheeler - teal
-        (234, 166, 78),  # (cycle) - orange
-        (150, 150, 180),  # (cycle) - grey
+        (78, 126, 234),
+        (162, 75, 118),
+        (45, 183, 147),
     ]
     for d in detections:
         x1, y1, x2, y2 = [int(v) for v in d.bbox]
-        cls_idx = d.class_id % len(colors)
-        color = colors[cls_idx]
+        color = colors[d.class_id % len(colors)]
         cv2.rectangle(out, (x1, y1), (x2, y2), color, 2)
         label = f"{d.class_name} {d.confidence:.2f}"
-        # Background for text
         (tw, th), _ = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.55, 1)
         cv2.rectangle(out, (x1, y1 - th - 8), (x1 + tw + 4, y1), color, -1)
         cv2.putText(
@@ -279,20 +332,6 @@ def draw_detections_on_frame(frame: np.ndarray, detections, risked_tracks=None):
             1,
             cv2.LINE_AA,
         )
-
-    if risked_tracks and isinstance(risked_tracks, list) and risked_tracks:
-        danger_n = sum(1 for r in risked_tracks if getattr(r, "risk", None) == "DANGER")
-        cmd_text = f"Risk tracks: {len(risked_tracks)}  DANGER: {danger_n}"
-        cv2.putText(
-            out,
-            cmd_text,
-            (20, 45),
-            cv2.FONT_HERSHEY_SIMPLEX,
-            1.0,
-            (0, 100, 255),
-            2,
-            cv2.LINE_AA,
-        )
     return out
 
 
@@ -301,7 +340,7 @@ def draw_detections_on_frame(frame: np.ndarray, detections, risked_tracks=None):
 # ---------------------------------------------------------------------------
 with st.sidebar:
     st.markdown("# 🚗 CPV301")
-    st.markdown("### Vehicle Pedestrian & Vehicle Avoidance")
+    st.markdown("### Vehicle & Pedestrian Risk Advisory")
     st.markdown("---")
 
     page = st.radio(
@@ -330,10 +369,10 @@ if page == "🏠 Overview":
     # Hero
     st.markdown(
         """
-    <div class="hero-title">Vehicle Pedestrian & Vehicle Avoidance</div>
+    <div class="hero-title">Vehicle & Pedestrian Risk Advisory</div>
     <div class="hero-sub">
-        How can vehicles avoid pedestrians and vehicles?<br>
-        A three-stage Computer Vision pipeline: <b>Detection → Tracking → Risk Assessment</b>
+        Forward-Collision-Warning perception for dashcam footage (monocular, no control loop)<br>
+        Three-stage Computer Vision pipeline: <b>Detection → Tracking → Risk Assessment</b>
     </div>
     """,
         unsafe_allow_html=True,
@@ -496,9 +535,9 @@ elif page == "📊 Training Results":
     )
 
     st.info(
-        "🔧 **Pending.** The project pivoted to vehicle pedestrian/vehicle "
-        "avoidance on **BDD100K**. The 3-model comparison "
-        "(YOLOv8n / YOLOv8m / RT-DETR-L) is retrained on BDD100K in the data "
+        "🔧 **Pending.** The project pivoted to a vehicle & pedestrian "
+        "risk-advisory system on **BDD100K**. The 3-model comparison "
+        "(YOLOv8n / YOLOv8m / RT-DETR-L) trains on BDD100K in the data "
         "pipeline (Plan 2) and training/evaluation phase (Plan 3). Results — "
         "mAP@0.5, per-class AP, FPS, plus the **KITTI cross-dataset "
         "generalization** and **day/night robustness** findings — populate "
@@ -548,16 +587,17 @@ elif page == "🎯 Live Demo":
 
         st.warning(
             "⚠️ **No model weights found** in `models/` directory.\n\n"
-            "To enable live inference, either:\n"
-            "1. Download trained weights: `modal run modal_train.py::fetch --model yolov8m`\n"
-            "2. Place any `.pt` weights file in the `models/` folder\n"
-            "3. The app will use the default pretrained YOLOv8m (COCO classes) as fallback\n\n"
-            "For now, you can still upload images/videos and the app will attempt to use "
-            "the default `yolov8m.pt` pretrained model."
+            "To enable live inference, train the models (Plan 3) and place the\n"
+            "checkpoint files in `models/` with the expected names:\n"
+            "- `models/yolov8n-best.pt` — speed baseline\n"
+            "- `models/yolov8m-best.pt` — primary R4 demo model\n"
+            "- `models/rtdetr-best.pt` — accuracy ceiling\n\n"
+            "As a fallback, tick the box below to use a generic pretrained YOLOv8m "
+            "(COCO 80-class) — note: class names will not match the 3-class scheme."
         )
 
         use_default = st.checkbox(
-            "🔄 Use default pretrained YOLOv8m (COCO, 80 classes)", value=True
+            "🔄 Use fallback pretrained YOLOv8m (COCO, 80 classes)", value=True
         )
         if use_default:
             weights_choice = "yolov8m.pt"
@@ -565,7 +605,8 @@ elif page == "🎯 Live Demo":
             weights_choice = None
     else:
         st.markdown(
-            '<div class="hero-sub">Upload an image or video to run the full pipeline (detect → track → avoid).</div>',
+            '<div class="hero-sub">Upload an image or video to run the full pipeline'
+            " (detect → track → risk advisory).</div>",
             unsafe_allow_html=True,
         )
         weights_choice = st.selectbox("Select model weights:", available_weights)
@@ -582,18 +623,13 @@ elif page == "🎯 Live Demo":
 
         if uploaded_img and weights_choice:
             with st.spinner("Loading model & running inference..."):
-                model = load_model(weights_choice)
-                if model is None:
-                    # Try downloading default
-                    try:
-                        from ultralytics import YOLO
+                try:
+                    detector = load_yolo_detector(weights_choice)
+                except Exception as e:
+                    st.error(f"Failed to load detector: {e}")
+                    detector = None
 
-                        model = YOLO(weights_choice)
-                    except Exception as e:
-                        st.error(f"Failed to load model: {e}")
-                        model = None
-
-                if model is not None:
+                if detector is not None:
                     # Read image
                     file_bytes = np.asarray(
                         bytearray(uploaded_img.read()), dtype=np.uint8
@@ -601,10 +637,10 @@ elif page == "🎯 Live Demo":
                     img = cv2.imdecode(file_bytes, cv2.IMREAD_COLOR)
 
                     if img is not None:
-                        # Run detection
-                        detections, raw_results = run_inference_on_frame(model, img)
+                        # Run detection via src pipeline
+                        detections = run_inference_on_frame(detector, img)
 
-                        # Try running full pipeline
+                        # Full pipeline: tracking + risk assessment + ego-path
                         try:
                             from src.tracking.kalman_tracker import KalmanTracker
                             from src.risk.zone_assessor import RiskZoneAssessor
@@ -613,14 +649,15 @@ elif page == "🎯 Live Demo":
                             tracker = KalmanTracker(min_hits=1)
                             assessor = RiskZoneAssessor()
                             tracks = tracker.update(detections)
-                            risked = assessor.assess(tracks, frame_shape=(h, w))
-                            risked_tracks = risked
+                            risked_tracks = assessor.assess(tracks, frame_shape=(h, w))
+                            ego_poly = assessor.ego_path_polygon((h, w))
                         except Exception:
                             risked_tracks = None
+                            ego_poly = None
 
-                        # Draw results
-                        annotated = draw_detections_on_frame(
-                            img, detections, risked_tracks
+                        # Draw results with ego-path overlay + risk colors
+                        annotated = draw_pipeline_frame(
+                            img, detections, risked_tracks, ego_poly
                         )
                         annotated_rgb = cv2.cvtColor(annotated, cv2.COLOR_BGR2RGB)
 
@@ -633,7 +670,7 @@ elif page == "🎯 Live Demo":
                                 use_container_width=True,
                             )
                         with col_det:
-                            st.markdown("##### Detection + Tracking + Risk")
+                            st.markdown("##### Detection + Tracking + Risk Advisory")
                             st.image(annotated_rgb, use_container_width=True)
 
                         # Stats
@@ -663,7 +700,10 @@ elif page == "🎯 Live Demo":
                                         {
                                             "Class": d.class_name,
                                             "Confidence": f"{d.confidence:.2%}",
-                                            "BBox": f"[{d.bbox[0]:.0f}, {d.bbox[1]:.0f}, {d.bbox[2]:.0f}, {d.bbox[3]:.0f}]",
+                                            "BBox": (
+                                                f"[{d.bbox[0]:.0f}, {d.bbox[1]:.0f},"
+                                                f" {d.bbox[2]:.0f}, {d.bbox[3]:.0f}]"
+                                            ),
                                         }
                                         for d in detections
                                     ]
@@ -679,17 +719,13 @@ elif page == "🎯 Live Demo":
 
         if uploaded_vid and weights_choice:
             with st.spinner("Processing video... This may take a while."):
-                model_v = load_model(weights_choice)
-                if model_v is None:
-                    try:
-                        from ultralytics import YOLO
+                try:
+                    detector_v = load_yolo_detector(weights_choice)
+                except Exception as e:
+                    st.error(f"Failed to load detector: {e}")
+                    detector_v = None
 
-                        model_v = YOLO(weights_choice)
-                    except Exception as e:
-                        st.error(f"Failed to load model: {e}")
-                        model_v = None
-
-                if model_v is not None:
+                if detector_v is not None:
                     # Save uploaded video to temp file
                     tfile = tempfile.NamedTemporaryFile(delete=False, suffix=".mp4")
                     tfile.write(uploaded_vid.read())
@@ -711,7 +747,8 @@ elif page == "🎯 Live Demo":
                             total_frames = 10
 
                         st.info(
-                            f"📹 Video: {w_vid}×{h_vid} @ {fps:.0f}fps · {total_frames} frames"
+                            f"📹 Video: {w_vid}×{h_vid} @ {fps:.0f}fps"
+                            f" · {total_frames} frames"
                         )
 
                         max_frames = st.slider(
@@ -722,7 +759,7 @@ elif page == "🎯 Live Demo":
                             step=10,
                         )
 
-                        if st.button("▶️ Run Detection", type="primary"):
+                        if st.button("▶️ Run Risk Advisory Pipeline", type="primary"):
                             try:
                                 from src.tracking.kalman_tracker import KalmanTracker
                                 from src.risk.zone_assessor import RiskZoneAssessor
@@ -731,6 +768,7 @@ elif page == "🎯 Live Demo":
                                 assessor_v = RiskZoneAssessor()
                                 use_full_pipeline = True
                             except Exception:
+                                assessor_v = None
                                 use_full_pipeline = False
 
                             # Process frames
@@ -753,24 +791,31 @@ elif page == "🎯 Live Demo":
                                 if not ret:
                                     break
 
-                                dets, _ = run_inference_on_frame(model_v, frame)
+                                dets = run_inference_on_frame(detector_v, frame)
 
                                 risked_v = None
+                                ego_poly_v = None
                                 if use_full_pipeline:
                                     tracks_v = tracker_v.update(dets)
                                     risked_v = assessor_v.assess(
                                         tracks_v,
                                         frame_shape=(h_vid, w_vid),
                                     )
+                                    ego_poly_v = assessor_v.ego_path_polygon(
+                                        (h_vid, w_vid)
+                                    )
 
-                                annotated_v = draw_detections_on_frame(
-                                    frame, dets, risked_v
+                                annotated_v = draw_pipeline_frame(
+                                    frame, dets, risked_v, ego_poly_v
                                 )
                                 out_writer.write(annotated_v)
                                 frame_count += 1
                                 progress.progress(
                                     frame_count / max_frames,
-                                    text=f"Processing frame {frame_count}/{max_frames}...",
+                                    text=(
+                                        f"Processing frame"
+                                        f" {frame_count}/{max_frames}..."
+                                    ),
                                 )
 
                             out_writer.release()
@@ -793,7 +838,7 @@ elif page == "📋 Pipeline Status":
         unsafe_allow_html=True,
     )
     st.markdown(
-        '<div class="hero-sub">Project progress — Vehicle Pedestrian & Vehicle Avoidance pivot</div>',
+        '<div class="hero-sub">Project progress — Vehicle & Pedestrian Risk Advisory pivot</div>',
         unsafe_allow_html=True,
     )
 

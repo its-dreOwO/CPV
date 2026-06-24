@@ -56,13 +56,26 @@ def test_large_in_path_object_is_danger():
     assert rt.risk == RiskLevel.DANGER
 
 
-def test_small_growing_in_path_object_is_danger():
-    # Small box but area growing fast: growth_rate = 20/400 = 0.05 >= 0.02.
+def test_small_growing_in_path_object_is_caution_not_danger():
+    # Regression: a tiny far box's area-growth signal is noise-dominated
+    # (growth_rate = 20/400 = 0.05) but the box is far below the size floor
+    # (area frac ~0.001 < min_danger_area_frac=0.01), so growth must NOT
+    # escalate it to DANGER. It caps at CAUTION.
     t = Track(track_id=4, bbox=[310, 590, 330, 610], scale_velocity=20.0)
     rt = _assess_one(t)
     assert rt.in_path is True
+    assert rt.risk == RiskLevel.CAUTION
+    assert rt.ttc_proxy > 0  # proxy still computed, just gated out of DANGER
+
+
+def test_midsize_growing_in_path_object_is_danger():
+    # A box above the size floor (70x70, area frac ~0.012 >= 0.01) growing fast
+    # (growth_rate = 120/4900 = 0.0245 >= 0.02) -> DANGER. Confirms the size
+    # gate does not disable growth-driven danger for objects that matter.
+    t = Track(track_id=6, bbox=[285, 550, 355, 620], scale_velocity=120.0)
+    rt = _assess_one(t)
+    assert rt.in_path is True
     assert rt.risk == RiskLevel.DANGER
-    assert rt.ttc_proxy > 0
 
 
 def test_small_stable_in_path_object_is_caution():

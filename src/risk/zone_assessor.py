@@ -18,12 +18,14 @@ class RiskZoneAssessor(BaseRiskAssessor):
         bottom_width: float = 0.9,
         large_area_frac: float = 0.05,
         growth_thresh: float = 0.02,
+        min_danger_area_frac: float = 0.01,
     ):
         self.horizon_ratio = horizon_ratio
         self.top_width = top_width
         self.bottom_width = bottom_width
         self.large_area_frac = large_area_frac
         self.growth_thresh = growth_thresh
+        self.min_danger_area_frac = min_danger_area_frac
 
     def _half_width_at(self, py: float, h: int, w: int):
         """Half-width of the trapezoid at image row py, or None if above horizon."""
@@ -72,8 +74,14 @@ class RiskZoneAssessor(BaseRiskAssessor):
             if not in_path:
                 risk = RiskLevel.SAFE
             else:
-                big = area / frame_area >= self.large_area_frac
-                growing = growth_rate >= self.growth_thresh
+                area_frac = area / frame_area
+                big = area_frac >= self.large_area_frac
+                # A distant (tiny) box's area-growth signal is noise-dominated:
+                # scale_velocity / area explodes as area -> 0. Require the box to
+                # clear a minimum size before growth may escalate to DANGER, so
+                # far objects cannot false-trigger on Kalman jitter.
+                near_enough = area_frac >= self.min_danger_area_frac
+                growing = near_enough and growth_rate >= self.growth_thresh
                 risk = RiskLevel.DANGER if (big or growing) else RiskLevel.CAUTION
 
             out.append(

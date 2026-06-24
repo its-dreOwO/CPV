@@ -16,7 +16,7 @@ Submissions are organized into four rounds (`reports/R1`-`R4`), each requiring s
 - Design spec: `docs/superpowers/specs/2026-06-22-vehicle-avoidance-pivot-design.md`
 - Implementation plans: `docs/superpowers/plans/` (Plan 1 = risk-assessor code pivot, Plan 2 = BDD100K data pipeline, Plan 3 = training + eval + docs rewrite)
 
-> **Note:** the old drone `docs/training_pipeline.md` was removed; the design spec under `docs/superpowers/specs/` is the source of truth. A vehicle training pipeline doc is authored in Plan 3 when training lands. Active work is on branch `pivot/vehicle-avoidance`.
+> **Note:** the design spec under `docs/superpowers/specs/` is the source of truth. The vehicle training pipeline doc was authored in Plan 3 — see `docs/training_pipeline.md` (Modal training runbook, evaluation, KITTI zero-shot, risk validation). Active work is on branch `pivot/vehicle-avoidance`.
 
 ## Commands
 
@@ -82,7 +82,7 @@ frame (dashcam, monocular np.ndarray)
 
 `main.py` wires these together for the live demo and overlays the ego-path region + color-coded risk boxes. `prototype/web_app.py` is a Streamlit showcase app reusing the same `src.*` pipeline classes; it inserts the repo root onto `sys.path` so `from src.*` resolves and reads its theme from the repo-root `.streamlit/config.toml` — always launch it from the repo root. `scripts/train.py` loads a model config YAML and calls `ultralytics.YOLO.train()`. `scripts/preprocess.py` does the class remap + stratified split; `scripts/validate_data.py` runs pre-training integrity checks (helpers in `src/utils/data_validation.py`).
 
-> The `src/risk/` package replaces the former `src/avoidance/` (the word "avoidance" implied a control loop). `validate_data.py`, `train.py`, `evaluate.py`, and `modal_train.py` still need Plan 3 cleanup for the vehicle pipeline.
+> The `src/risk/` package replaces the former `src/avoidance/` (the word "avoidance" implied a control loop). Plan 3 cleaned up the vehicle pipeline: `evaluate.py` (per-class mAP, drop visdrone refs) and `modal_train.py` (correct `--data-root`, vehicle naming) are done; `scripts/evaluate_robustness.py`, `scripts/preprocess_kitti.py`, `scripts/validate_risk.py`, and `src/utils/kitti.py` were added.
 
 **Import style:** modules import from `src.*` (absolute), so always run pytest/scripts from the repo root.
 
@@ -95,14 +95,16 @@ Only the **detector** is trained. Tracker = Kalman + Hungarian (rule-based). Ris
 - **Held-out — KITTI** (cross-dataset). Used in R3 for (a) zero-shot generalization (domain gap) and (b) **validating the risk-zone heuristic against ground-truth 3D/depth** distances.
 - Both gitignored under `data/raw/` and `data/processed/`.
 
-**Model lineup for the R3 >=3-model comparison (kept):**
-- **YOLOv8n** — speed baseline / embedded floor
+**Model lineup for the R3 >=3-model comparison:**
+- **YOLOv8n** — speed baseline / embedded floor (shared anchor)
 - **YOLOv8m** — primary demo model (ships in R4)
-- **RT-DETR-L** — accuracy ceiling / architecture contrast (transformer vs CNN)
+- **YOLOv10n** — NMS-free, end-to-end CNN; architecture/paradigm contrast at matched (nano) capacity
 
-Two controlled axes — capacity (n -> m) and architecture (m -> RT-DETR-L) — so any gap is attributable to the model, not the training loop. All use the same Ultralytics API.
+With YOLOv8n as the shared anchor, two clean axes isolate the cause of any gap: capacity (v8n -> v8m, same architecture) and version/paradigm (v8n -> v10n, same nano scale). All use the same Ultralytics API.
 
-**Locked decisions:** image size 640x640, epochs 50 (full) / 5 (sanity), seed = 42 everywhere, 70/15/15 stratified split, selection rule **highest mAP@0.5 subject to FPS >= 30**. Compute target: Nvidia L4 (24 GB); RT-DETR-L needs L40S/A100 for batch=16.
+> **Lineup change (2026-06-23, budget-driven):** RT-DETR-L was dropped in favor of **YOLOv10n**. RT-DETR cost ~$0.47/epoch (≈$23 for a full run) regardless of GPU — over half the available compute budget — while YOLOv10n trains for ~$5.6. YOLOv10n preserves RT-DETR's key contribution (a *non-NMS, end-to-end* detection paradigm) at a fraction of the cost, and its latency focus fits the FPS>=30 selection rule. `configs/rtdetr.yaml` was removed.
+
+**Locked decisions:** image size 640x640, epochs 50 (full) / 5 (sanity), seed = 42 everywhere, 70/15/15 stratified split, selection rule **highest mAP@0.5 subject to FPS >= 30**. Compute target: Nvidia L4 (24 GB) — all three models fit on L4 (YOLOv10n at batch 64 like the other nano).
 
 ## Pipeline status (as of 2026-06-23)
 
@@ -114,7 +116,9 @@ The pivot is mid-implementation. Old drone training results (VisDrone) are **sup
 | Design spec | ✅ approved + committed |
 | Plan 1 — risk-assessor code pivot (`src/risk/`) | ✅ done |
 | Plan 2 — BDD100K data pipeline (download, JSON→YOLO, 3-class remap) | ✅ done |
-| Plan 3 — training (3 models on BDD100K) + KITTI eval + docs/Streamlit rewrite | ⬜ next |
+| Plan 3 — training/eval/risk-validation scripts + docs/Streamlit rewrite | ✅ code done |
+| Plan 3 — GPU training runs (3 models) | 🔄 in progress — yolov8n + yolov10n on Modal (detached), yolov8m on a free GCP T4 VM; see `docs/superpowers/plans/2026-06-23-HANDOFF.md` |
+| Plan 3 — fetch/verify weights + BDD100K/KITTI eval + risk validation + final review | ⬜ operator-pending (handoff has exact commands) |
 
 ## R-round mapping
 

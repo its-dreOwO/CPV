@@ -1,4 +1,4 @@
-"""Modal training script — CPV obstacle avoidance.
+"""Modal training script — CPV vehicle-perception (dashcam obstacle detection).
 
 Quick start
 -----------
@@ -6,29 +6,32 @@ Quick start
        pip install modal
        modal setup
 
-2. Upload the dataset — tar first so it's one file, not 8000 (one-time):
-       tar czf processed.tar.gz -C data processed
-       modal volume create cpv-data
-       modal volume put cpv-data processed.tar.gz /processed.tar.gz
-       modal run modal_train.py::extract_dataset
+2. Upload the dataset — tar first so it's one file, not ~80k (one-time).
+   Use -h so the symlinked images are dereferenced into the archive:
+       tar czhf processed.tar.gz -C data processed
+       modal volume create cpv-bdd100k
+       modal volume put cpv-bdd100k processed.tar.gz /processed.tar.gz
        rm processed.tar.gz   # optional cleanup
+   The archive stays in the volume as one file; each train run unpacks it to
+   fast local disk (Modal Volumes are too slow for YOLO's per-epoch reads of
+   ~80k small files). No separate extract step is needed.
 
 3. Sanity check — 5 epochs on YOLOv8n (~15 min, ~$0.15 on L4):
        modal run modal_train.py::main --model yolov8n --epochs 5
 
-4. Full training runs (run independently, ~$1–2 each on L4):
-       modal run modal_train.py::main --model yolov8n --epochs 50
-       modal run modal_train.py::main --model yolov8m --epochs 50
-       modal run modal_train.py::main --model rtdetr  --epochs 50
+4. Full training runs (run independently; ~$5.6 each nano, ~$13 for yolov8m on L4):
+       modal run modal_train.py::main --model yolov8n  --epochs 50
+       modal run modal_train.py::main --model yolov8m  --epochs 50
+       modal run modal_train.py::main --model yolov10n --epochs 50
 
 5. Download a trained model:
        modal run modal_train.py::fetch --model yolov8m
        # saves to models/yolov8m-best.pt
 
 GPU cost guide (Modal pay-as-you-go):
-    L4   $0.80/hr  24 GB VRAM  — default, best value for these models
+    L4   $0.80/hr  24 GB VRAM  — default; all three models fit and train here
     A10G $1.10/hr  24 GB VRAM  — fallback if L4 unavailable
-    T4   $0.59/hr  16 GB VRAM  -- budget option; RT-DETR may OOM at batch 8
+    T4   $0.59/hr  16 GB VRAM  -- budget option; the nano/medium CNNs fit fine
 
 Storage: Modal volumes cost ~$0.20/GB/month (~$0.40/mo for this 1.9 GB dataset).
 """
@@ -38,9 +41,36 @@ from pathlib import Path
 
 import modal
 
-APP_NAME = "cpv-obstacle-avoidance"
-VOLUME_NAME = "cpv-data"
+APP_NAME = "cpv-vehicle-perception"
+VOLUME_NAME = "cpv-bdd100k"
 VOLUME_PATH = Path("/vol")
+# The volume stores the single dataset archive (/vol/processed.tar.gz); each
+# train run unpacks it to fast local disk here (the dir holding processed/…).
+LOCAL_DATASET_ROOT = Path("/root/data")
+# Within either root, the dataset lives under processed/bdd100k (train/ val/ test/).
+DATASET_SUBDIR = "processed/bdd100k"
+
+
+def build_train_cmd(model, epochs, dataset_path, run_dir, resume):
+    """Argv for the in-container scripts/train.py call. Pure + unit-testable."""
+    cmd = [
+        "python",
+        "/app/scripts/train.py",
+        "--config",
+        f"/app/configs/{model}.yaml",
+        "--epochs",
+        str(epochs),
+        "--device",
+        "0",
+        "--data-root",
+        str(dataset_path),
+        "--project",
+        str(run_dir),
+    ]
+    if resume:
+        cmd.append("--resume")
+    return cmd
+
 
 app = modal.App(APP_NAME)
 volume = modal.Volume.from_name(VOLUME_NAME, create_if_missing=True)
@@ -55,13 +85,13 @@ image = (
     .run_commands(
         'python -c "'
         "from ultralytics import YOLO; "
-        "[YOLO(w) for w in ['yolov8n.pt','yolov8m.pt','rtdetr-l.pt']]\""
+        "[YOLO(w) for w in ['yolov8n.pt','yolov8m.pt','yolov10n.pt']]\""
     )
     .add_local_dir("configs", remote_path="/app/configs")
     .add_local_dir("scripts", remote_path="/app/scripts")
 )
 
-_VALID_MODELS = ("yolov8n", "yolov8m", "rtdetr")
+_VALID_MODELS = ("yolov8n", "yolov8m", "yolov10n")
 
 
 @app.function(
@@ -74,15 +104,28 @@ _VALID_MODELS = ("yolov8n", "yolov8m", "rtdetr")
 def train(model: str, epochs: int, fresh: bool = False) -> None:
     import os
     import shutil
+    import tarfile
 
-    dataset_path = VOLUME_PATH / "processed"
+    # Extract the dataset from the volume archive to fast local container disk.
+    # YOLO re-reads every image each epoch; a Modal Volume (network filesystem,
+    # tuned for few large files) is far too slow for ~80k small-file reads x50
+    # epochs and even times out on the initial unpack. Unpacking the single
+    # tar.gz to ephemeral local NVMe once per run (~1-2 min) sidesteps both.
+    dataset_path = LOCAL_DATASET_ROOT / DATASET_SUBDIR
     if not dataset_path.exists():
-        raise RuntimeError(
-            "Dataset not found in volume. Run:\n"
-            "  tar czf processed.tar.gz -C data processed\n"
-            f"  modal volume put {VOLUME_NAME} processed.tar.gz /processed.tar.gz\n"
-            "  modal run modal_train.py::extract_dataset"
-        )
+        archive = VOLUME_PATH / "processed.tar.gz"
+        if not archive.exists():
+            raise RuntimeError(
+                f"Dataset archive {archive} not found in volume. Upload it:\n"
+                "  tar czhf processed.tar.gz -C data processed  # -h derefs symlinks\n"
+                f"  modal volume put {VOLUME_NAME} processed.tar.gz /processed.tar.gz"
+            )
+        print(f"Extracting {archive} -> {LOCAL_DATASET_ROOT} (local disk)…")
+        LOCAL_DATASET_ROOT.mkdir(parents=True, exist_ok=True)
+        with tarfile.open(archive) as tar:
+            tar.extractall(path=LOCAL_DATASET_ROOT)
+        n = sum(1 for p in dataset_path.rglob("*") if p.is_file())
+        print(f"Extracted {n} files to {dataset_path}")
 
     run_dir = VOLUME_PATH / "runs"
     run_dir.mkdir(parents=True, exist_ok=True)
@@ -95,29 +138,14 @@ def train(model: str, epochs: int, fresh: bool = False) -> None:
         print(f"--fresh: cleared {model_run_dir}")
 
     if not fresh and last_pt.exists():
-        extra = ["--resume"]
         print(f"Found checkpoint at {last_pt} — resuming.")
     else:
         if model_run_dir.exists():
             shutil.rmtree(model_run_dir)
             print(f"Cleared previous run at {model_run_dir}")
-        extra = []
 
-    cmd = [
-        "python",
-        "/app/scripts/train.py",
-        "--config",
-        f"/app/configs/{model}.yaml",
-        "--epochs",
-        str(epochs),
-        "--device",
-        "0",
-        "--data-root",
-        str(dataset_path),
-        "--project",
-        str(run_dir),
-        *extra,
-    ]
+    resume = (not fresh) and last_pt.exists()
+    cmd = build_train_cmd(model, epochs, dataset_path, run_dir, resume)
     print("Running:", " ".join(cmd))
     result = subprocess.run(cmd, cwd="/app", env={**os.environ}, bufsize=1)
     volume.commit()
@@ -149,30 +177,6 @@ def gpu_info() -> None:
         ],
         check=True,
     )
-
-
-@app.function(
-    image=modal.Image.debian_slim(python_version="3.11"),
-    volumes={VOLUME_PATH: volume},
-    timeout=10 * 60,
-)
-def extract_dataset() -> None:
-    """Extract /vol/processed.tar.gz → /vol/processed/ inside the volume."""
-    import tarfile
-
-    archive = VOLUME_PATH / "processed.tar.gz"
-    if not archive.exists():
-        raise RuntimeError(
-            f"{archive} not found. Upload it first:\n"
-            "  tar czf processed.tar.gz -C data processed\n"
-            f"  modal volume put {VOLUME_NAME} processed.tar.gz /processed.tar.gz"
-        )
-    print(f"Extracting {archive} …")
-    with tarfile.open(archive) as tar:
-        tar.extractall(path=VOLUME_PATH)
-    n = sum(1 for p in (VOLUME_PATH / "processed").rglob("*") if p.is_file())
-    print(f"Done — {n} files extracted to {VOLUME_PATH / 'processed'}")
-    volume.commit()
 
 
 @app.local_entrypoint()

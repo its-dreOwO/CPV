@@ -1,0 +1,34 @@
+{
+  "by": "weather",
+  "split": "test",
+  "slices": {
+    "clear": {
+      "n_images": 5346,
+      "map50": 0.5374005955454346
+    },
+    "foggy": {
+      "n_images": 13,
+      "map50": 0.5183253125206414
+    },
+    "overcast": {
+      "n_images": 1239,
+      "map50": 0.5704021884197713
+    },
+    "partly cloudy": {
+      "n_images": 738,
+      "map50": 0.547550263558092
+    },
+    "rainy": {
+      "n_images": 738,
+      "map50": 0.5405743699159146
+    },
+    "snowy": {
+      "n_images": 769,
+      "map50": 0.5112465285740876
+    },
+    "undefined": {
+      "n_images": 1157,
+      "map50": 0.5888706913957519
+    }
+  }
+}

@@ -126,6 +126,16 @@ A dashcam is monocular — no runtime depth. "Dangerous" decomposes into **WHERE
    - `CAUTION` = `in_path` ∧ slow/stable, **or** near the path edge
    - `SAFE` = off-path
    All thresholds live in the config; no magic numbers in code.
+5. **Size gate on growth** — the growth proxy normalizes by box area
+   (`scale_velocity / area`), so for a distant (tiny) box the signal is
+   noise-dominated: a 1–2 px Kalman jitter reads as explosive growth and would
+   false-trigger `DANGER`. A `min_danger_area_frac` floor requires the box to
+   clear a minimum size before *growth alone* may escalate to `DANGER`; below it
+   an in-path object caps at `CAUTION`. The `large` term is unaffected (a big box
+   right ahead is `DANGER` regardless). This is the runtime correlate of the
+   "no metric depth" honesty — distance is inferred from apparent size, and we
+   refuse to trust the closing signal where apparent size is too small to be
+   reliable.
 
 No extra models, real-time, reuses tracker output directly.
 

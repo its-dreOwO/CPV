@@ -35,6 +35,9 @@ data/processed/*
 !data/raw/.gitkeep
 !data/processed/.gitkeep
 !data/samples/.gitkeep
+# Downloaded demo media (re-fetchable from Kaggle; keep data/samples/ for tiny fixtures only)
+data/samples/bdd_video/
+data/samples/kaggle_dashcam/
 
 # Env files
 .env

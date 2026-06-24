@@ -1,0 +1,22 @@
+{
+  "by": "timeofday",
+  "split": "test",
+  "slices": {
+    "dawn/dusk": {
+      "n_images": 778,
+      "map50": 0.5637782832590216
+    },
+    "daytime": {
+      "n_images": 5258,
+      "map50": 0.5786807499051393
+    },
+    "night": {
+      "n_images": 3929,
+      "map50": 0.5498592420476154
+    },
+    "undefined": {
+      "n_images": 35,
+      "map50": 0.8340070768221904
+    }
+  }
+}

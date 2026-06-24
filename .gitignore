@@ -29,6 +29,9 @@ models/*.pth
 models/*.onnx
 models/*.weights
 
+# Ultralytics train/val output (plots, confusion matrices, etc.)
+runs/
+
 # Data (large files)
 data/raw/*
 data/processed/*

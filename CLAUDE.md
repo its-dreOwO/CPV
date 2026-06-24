@@ -106,9 +106,9 @@ With YOLOv8n as the shared anchor, two clean axes isolate the cause of any gap: 
 
 **Locked decisions:** image size 640x640, epochs 50 (full) / 5 (sanity), seed = 42 everywhere, 70/15/15 stratified split, selection rule **highest mAP@0.5 subject to FPS >= 30**. Compute target: Nvidia L4 (24 GB) — all three models fit on L4 (YOLOv10n at batch 64 like the other nano).
 
-## Pipeline status (as of 2026-06-23)
+## Pipeline status (as of 2026-06-24)
 
-The pivot is mid-implementation. Old drone training results (VisDrone) are **superseded** and the VisDrone data/weights were removed in the cleanup.
+The pivot is mostly complete. Old drone training results (VisDrone) are **superseded** and the VisDrone data/weights were removed in the cleanup.
 
 | Stage | Status |
 |-------|--------|
@@ -117,8 +117,10 @@ The pivot is mid-implementation. Old drone training results (VisDrone) are **sup
 | Plan 1 — risk-assessor code pivot (`src/risk/`) | ✅ done |
 | Plan 2 — BDD100K data pipeline (download, JSON→YOLO, 3-class remap) | ✅ done |
 | Plan 3 — training/eval/risk-validation scripts + docs/Streamlit rewrite | ✅ code done |
-| Plan 3 — GPU training runs (3 models) | 🔄 in progress — yolov8n + yolov10n on Modal (detached), yolov8m on a free GCP T4 VM; see `docs/superpowers/plans/2026-06-23-HANDOFF.md` |
-| Plan 3 — fetch/verify weights + BDD100K/KITTI eval + risk validation + final review | ⬜ operator-pending (handoff has exact commands) |
+| Plan 3 — GPU training runs (3 models) | ✅ done — all 3 fetched to `models/{yolov8n,yolov8m,yolov10n}-best.pt` (verified 3-class); GCP VM deleted |
+| Plan 3 — BDD100K test eval + robustness (×3) | ✅ done — `reports/R3/` (`*_metrics.json`, `*_robustness_*.json`, `RESULTS.md`); **yolov8m ships** (mAP@0.5 0.683, FPS≥30) |
+| Plan 3 — KITTI zero-shot + risk validation | ⬜ blocked on KITTI raw download (see handoff) |
+| Plan 3 — final whole-branch review + branch finish | ⬜ pending (see handoff) |
 
 ## R-round mapping
 
